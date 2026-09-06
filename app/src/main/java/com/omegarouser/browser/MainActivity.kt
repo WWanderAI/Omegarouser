@@ -1,4 +1,4 @@
-package com.example.googlebrowser
+package com.omegarouser.browser
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap

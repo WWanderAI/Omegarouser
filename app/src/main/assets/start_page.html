@@ -52,9 +52,10 @@
     color: #202124;
   }
   .search-box .icon {
-    font-size: 19px;
-    color: #34A853;
+    display: flex;
+    align-items: center;
     padding: 0 6px;
+    flex-shrink: 0;
   }
   .buttons {
     margin-top: 22px;
@@ -72,13 +73,6 @@
     color: #1e4620;
   }
   .buttons button:active { background: #D3ECDA; }
-
-  .tagline {
-    margin-top: 42px;
-    color: #4c7a52;
-    font-size: 13px;
-    text-align: center;
-  }
 </style>
 </head>
 <body>
@@ -89,7 +83,10 @@
 
   <form id="searchForm">
     <div class="search-box">
-      <span class="icon">🔍</span>
+      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="11" cy="11" r="7" stroke="#34A853" stroke-width="2"/>
+        <line x1="16.4" y1="16.4" x2="21" y2="21" stroke="#34A853" stroke-width="2" stroke-linecap="round"/>
+      </svg>
       <input id="q" type="text" placeholder="Поиск в интернете" autocomplete="off" autofocus />
     </div>
     <div class="buttons">
@@ -97,8 +94,6 @@
       <button type="button" id="luckyBtn">Мне повезёт</button>
     </div>
   </form>
-
-  <div class="tagline">Твой браузер · Твои правила 🌿</div>
 </div>
 
 <script>

@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnReload: ImageButton
     private lateinit var btnHome: ImageButton
 
-    private val homeUrl = "https://www.google.com"
+    private val homeUrl = "file:///android_asset/start_page.html"
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,7 +64,7 @@ class MainActivity : AppCompatActivity() {
                 progressBar.max = 100
                 progressBar.progress = 0
                 progressBar.visibility = ProgressBar.VISIBLE
-                url?.let { addressBar.setText(it) }
+                url?.let { addressBar.setText(displayUrl(it)) }
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -72,7 +72,7 @@ class MainActivity : AppCompatActivity() {
                 progressBar.visibility = ProgressBar.GONE
                 swipeRefresh.isRefreshing = false
                 updateNavButtons()
-                url?.let { addressBar.setText(it) }
+                url?.let { addressBar.setText(displayUrl(it)) }
             }
         }
 
@@ -130,6 +130,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
         webView.loadUrl(url)
+    }
+
+    private fun displayUrl(url: String): String {
+        return if (url.startsWith("file:///android_asset/start_page.html")) "" else url
     }
 
     private fun updateNavButtons() {

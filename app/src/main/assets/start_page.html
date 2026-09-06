@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Omegarouser</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background: linear-gradient(180deg, #EAF9EE 0%, #DCF3E3 100%);
+    font-family: -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+  }
+  .wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 92vh;
+    padding: 28px 20px;
+  }
+  .logo {
+    font-size: 52px;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    margin-bottom: 30px;
+    display: flex;
+  }
+  .logo span:nth-child(4n+1) { color: #0B8043; }
+  .logo span:nth-child(4n+2) { color: #34A853; }
+  .logo span:nth-child(4n+3) { color: #66BB6A; }
+  .logo span:nth-child(4n)   { color: #137333; }
+
+  form { width: 100%; max-width: 560px; }
+  .search-box {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #CFE8D8;
+    border-radius: 28px;
+    padding: 12px 18px;
+    box-shadow: 0 1px 6px rgba(11, 128, 67, 0.12);
+  }
+  .search-box input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 17px;
+    background: transparent;
+    color: #202124;
+  }
+  .search-box .icon {
+    font-size: 19px;
+    color: #34A853;
+    padding: 0 6px;
+  }
+  .buttons {
+    margin-top: 22px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .buttons button {
+    background: #EAF7EE;
+    border: 1px solid #D3ECDA;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+    color: #1e4620;
+  }
+  .buttons button:active { background: #D3ECDA; }
+
+  .tagline {
+    margin-top: 42px;
+    color: #4c7a52;
+    font-size: 13px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <span>O</span><span>m</span><span>e</span><span>g</span><span>a</span><span>r</span><span>o</span><span>u</span><span>s</span><span>e</span><span>r</span>
+  </div>
+
+  <form id="searchForm">
+    <div class="search-box">
+      <span class="icon">🔍</span>
+      <input id="q" type="text" placeholder="Поиск в интернете" autocomplete="off" autofocus />
+    </div>
+    <div class="buttons">
+      <button type="submit">Поиск Omegarouser</button>
+      <button type="button" id="luckyBtn">Мне повезёт</button>
+    </div>
+  </form>
+
+  <div class="tagline">Твой браузер · Твои правила 🌿</div>
+</div>
+
+<script>
+  function doSearch(q, lucky) {
+    q = (q || "").trim();
+    if (!q) return;
+    var url = "https://www.google.com/search?q=" + encodeURIComponent(q);
+    if (lucky) url += "&btnI=1";
+    window.location.href = url;
+  }
+  document.getElementById('searchForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    doSearch(document.getElementById('q').value, false);
+  });
+  document.getElementById('luckyBtn').addEventListener('click', function () {
+    doSearch(document.getElementById('q').value, true);
+  });
+</script>
+</body>
+</html>

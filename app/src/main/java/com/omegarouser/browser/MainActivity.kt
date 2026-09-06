@@ -73,6 +73,9 @@ class MainActivity : AppCompatActivity() {
                 swipeRefresh.isRefreshing = false
                 updateNavButtons()
                 url?.let { addressBar.setText(displayUrl(it)) }
+                if (url != null && !url.startsWith("file:///android_asset")) {
+                    applyGreenFilter(view)
+                }
             }
         }
 
@@ -130,6 +133,22 @@ class MainActivity : AppCompatActivity() {
             }
         }
         webView.loadUrl(url)
+    }
+
+    private fun applyGreenFilter(view: WebView?) {
+        val js = """
+            (function() {
+                if (document.getElementById('omegarouser-green-filter')) return;
+                var style = document.createElement('style');
+                style.id = 'omegarouser-green-filter';
+                style.type = 'text/css';
+                style.appendChild(document.createTextNode(
+                    'html { filter: hue-rotate(100deg) saturate(0.92) !important; -webkit-filter: hue-rotate(100deg) saturate(0.92) !important; }'
+                ));
+                document.head.appendChild(style);
+            })();
+        """.trimIndent()
+        view?.evaluateJavascript(js, null)
     }
 
     private fun displayUrl(url: String): String {

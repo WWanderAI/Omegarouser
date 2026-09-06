@@ -5,12 +5,16 @@ import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
+import android.graphics.Paint
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.util.Patterns
 import android.view.KeyEvent
+import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.webkit.CookieManager
 import android.webkit.GeolocationPermissions
@@ -43,6 +47,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sslIndicator: ImageView
 
     private val homeUrl = "file:///android_asset/start_page.html"
+
+    // Нативный зелёный фильтр (работает на уровне пикселей, не зависит от CSP сайта)
+    private val greenFilterPaint: Paint by lazy {
+        Paint().apply {
+            colorFilter = ColorMatrixColorFilter(buildHueRotationMatrix(100f))
+        }
+    }
 
     // Простой список рекламных/трекинговых доменов для блокировки
     private val adBlockHosts = setOf(
@@ -174,6 +185,7 @@ class MainActivity : AppCompatActivity() {
                 url?.let {
                     addressBar.setText(displayUrl(it))
                     updateSslIndicator(it)
+                    setGreenFilterEnabled(!it.startsWith("file:///android_asset"))
                 }
             }
 
@@ -185,9 +197,7 @@ class MainActivity : AppCompatActivity() {
                 url?.let {
                     addressBar.setText(displayUrl(it))
                     updateSslIndicator(it)
-                }
-                if (url != null && !url.startsWith("file:///android_asset")) {
-                    applyGreenFilter(view)
+                    setGreenFilterEnabled(!it.startsWith("file:///android_asset"))
                 }
             }
         }
@@ -322,20 +332,45 @@ class MainActivity : AppCompatActivity() {
         webView.loadUrl(url)
     }
 
-    private fun applyGreenFilter(view: WebView?) {
-        val js = """
-            (function() {
-                if (document.getElementById('omegarouser-green-filter')) return;
-                var style = document.createElement('style');
-                style.id = 'omegarouser-green-filter';
-                style.type = 'text/css';
-                style.appendChild(document.createTextNode(
-                    'html { filter: hue-rotate(100deg) saturate(0.92) !important; -webkit-filter: hue-rotate(100deg) saturate(0.92) !important; }'
-                ));
-                document.head.appendChild(style);
-            })();
-        """.trimIndent()
-        view?.evaluateJavascript(js, null)
+    private fun setGreenFilterEnabled(enabled: Boolean) {
+        if (enabled) {
+            webView.setLayerType(View.LAYER_TYPE_HARDWARE, greenFilterPaint)
+        } else {
+            webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        }
+    }
+
+    /**
+     * Строит цветовую матрицу поворота оттенка (аналог CSS filter: hue-rotate),
+     * применяется напрямую к пикселям WebView — не зависит от CSP или JS сайта.
+     */
+    private fun buildHueRotationMatrix(degrees: Float): ColorMatrix {
+        val radians = Math.toRadians(degrees.toDouble())
+        val cos = Math.cos(radians).toFloat()
+        val sin = Math.sin(radians).toFloat()
+
+        val matrix = ColorMatrix()
+        matrix.set(
+            floatArrayOf(
+                0.213f + cos * 0.787f - sin * 0.213f,
+                0.715f - cos * 0.715f - sin * 0.715f,
+                0.072f - cos * 0.072f + sin * 0.928f,
+                0f, 0f,
+
+                0.213f - cos * 0.213f + sin * 0.143f,
+                0.715f + cos * 0.285f + sin * 0.140f,
+                0.072f - cos * 0.072f - sin * 0.283f,
+                0f, 0f,
+
+                0.213f - cos * 0.213f - sin * 0.787f,
+                0.715f - cos * 0.715f + sin * 0.715f,
+                0.072f + cos * 0.928f + sin * 0.072f,
+                0f, 0f,
+
+                0f, 0f, 0f, 1f, 0f
+            )
+        )
+        return matrix
     }
 
     private fun displayUrl(url: String): String {

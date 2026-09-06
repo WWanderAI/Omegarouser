@@ -73,6 +73,40 @@
     color: #1e4620;
   }
   .buttons button:active { background: #D3ECDA; }
+
+  .quick-links {
+    margin-top: 36px;
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    flex-wrap: wrap;
+    max-width: 420px;
+  }
+  .quick-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    width: 64px;
+  }
+  .quick-link .bubble {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 700;
+    box-shadow: 0 1px 4px rgba(11, 128, 67, 0.18);
+  }
+  .quick-link .label {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #2e4a32;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -94,6 +128,33 @@
       <button type="button" id="luckyBtn">Мне повезёт</button>
     </div>
   </form>
+
+  <div class="quick-links">
+    <a class="quick-link" href="https://www.youtube.com">
+      <div class="bubble" style="background:#0B8043;">Y</div>
+      <div class="label">YouTube</div>
+    </a>
+    <a class="quick-link" href="https://vk.com">
+      <div class="bubble" style="background:#34A853;">VK</div>
+      <div class="label">VK</div>
+    </a>
+    <a class="quick-link" href="https://web.telegram.org">
+      <div class="bubble" style="background:#137333;">T</div>
+      <div class="label">Telegram</div>
+    </a>
+    <a class="quick-link" href="https://ru.wikipedia.org">
+      <div class="bubble" style="background:#66BB6A;">W</div>
+      <div class="label">Wikipedia</div>
+    </a>
+    <a class="quick-link" href="https://github.com">
+      <div class="bubble" style="background:#0B8043;">Gh</div>
+      <div class="label">GitHub</div>
+    </a>
+    <a class="quick-link" href="https://mail.google.com">
+      <div class="bubble" style="background:#34A853;">M</div>
+      <div class="label">Почта</div>
+    </a>
+  </div>
 </div>
 
 <script>

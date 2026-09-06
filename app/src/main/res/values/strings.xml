@@ -5,4 +5,5 @@
     <string name="nav_forward">Вперёд</string>
     <string name="nav_reload">Обновить</string>
     <string name="nav_home">Домой</string>
+    <string name="ssl_status">Статус соединения</string>
 </resources>

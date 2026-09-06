@@ -33,6 +33,15 @@
             android:src="@drawable/ic_forward"
             android:contentDescription="@string/nav_forward" />
 
+        <ImageView
+            android:id="@+id/sslIndicator"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginStart="8dp"
+            android:visibility="gone"
+            android:contentDescription="@string/ssl_status"
+            android:src="@drawable/ic_lock_secure" />
+
         <EditText
             android:id="@+id/addressBar"
             android:layout_width="0dp"

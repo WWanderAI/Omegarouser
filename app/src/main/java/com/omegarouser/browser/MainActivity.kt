@@ -2,6 +2,7 @@ package com.omegarouser.browser
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.animation.ObjectAnimator
 import android.app.DownloadManager
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -249,7 +250,9 @@ class MainActivity : AppCompatActivity() {
         webView.webChromeClient = object : android.webkit.WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 super.onProgressChanged(view, newProgress)
-                progressBar.progress = newProgress
+                ObjectAnimator.ofInt(progressBar, "progress", progressBar.progress, newProgress)
+                    .setDuration(200)
+                    .start()
             }
 
             override fun onGeolocationPermissionsShowPrompt(
@@ -347,6 +350,7 @@ class MainActivity : AppCompatActivity() {
         }
         btnHistory.setOnClickListener {
             startActivity(Intent(this, HistoryActivity::class.java))
+            overridePendingTransition(R.anim.slide_in_right, R.anim.fade_out_slight)
         }
 
         addressBar.setOnEditorActionListener { _, actionId, event ->

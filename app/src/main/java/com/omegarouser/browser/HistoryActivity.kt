@@ -36,6 +36,11 @@ class HistoryActivity : AppCompatActivity() {
         loadHistory()
     }
 
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(R.anim.fade_in_slight, R.anim.slide_out_right)
+    }
+
     override fun onResume() {
         super.onResume()
         loadHistory()

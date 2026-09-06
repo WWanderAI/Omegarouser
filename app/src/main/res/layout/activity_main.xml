@@ -11,25 +11,33 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:background="@color/bar_background"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
         android:paddingTop="8dp"
         android:paddingBottom="8dp"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:elevation="2dp">
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="2dp"
+            android:padding="8dp"
+            android:background="@drawable/bg_circle_ripple"
+            android:backgroundTint="@color/google_blue"
+            android:tint="@android:color/white"
             android:src="@drawable/ic_back"
             android:contentDescription="@string/nav_back" />
 
         <ImageButton
             android:id="@+id/btnForward"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:padding="8dp"
+            android:background="@drawable/bg_circle_ripple"
+            android:backgroundTint="@color/google_blue"
+            android:tint="@android:color/white"
             android:src="@drawable/ic_forward"
             android:contentDescription="@string/nav_forward" />
 
@@ -45,7 +53,7 @@
         <EditText
             android:id="@+id/addressBar"
             android:layout_width="0dp"
-            android:layout_height="44dp"
+            android:layout_height="42dp"
             android:layout_weight="1"
             android:layout_marginStart="4dp"
             android:layout_marginEnd="4dp"
@@ -60,25 +68,36 @@
 
         <ImageButton
             android:id="@+id/btnReload"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="2dp"
+            android:padding="8dp"
+            android:background="@drawable/bg_circle_ripple"
+            android:backgroundTint="@color/google_green"
+            android:tint="@android:color/white"
             android:src="@drawable/ic_reload"
             android:contentDescription="@string/nav_reload" />
 
         <ImageButton
             android:id="@+id/btnHome"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="2dp"
+            android:padding="8dp"
+            android:background="@drawable/bg_circle_ripple"
+            android:backgroundTint="@color/google_red"
+            android:tint="@android:color/white"
             android:src="@drawable/ic_home"
             android:contentDescription="@string/nav_home" />
 
         <ImageButton
             android:id="@+id/btnHistory"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:padding="8dp"
+            android:background="@drawable/bg_circle_ripple"
+            android:backgroundTint="@color/google_yellow"
+            android:tint="@android:color/white"
             android:src="@drawable/ic_history"
             android:contentDescription="@string/nav_history" />
     </LinearLayout>
@@ -88,8 +107,9 @@
         android:id="@+id/progressBar"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
-        android:layout_height="3dp"
+        android:layout_height="4dp"
         android:max="100"
+        android:progressTint="@color/google_blue"
         android:visibility="gone" />
 
     <!-- WebView с pull-to-refresh -->

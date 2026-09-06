@@ -421,11 +421,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setGreenFilterEnabled(enabled: Boolean) {
-        if (enabled) {
-            webView.setLayerType(View.LAYER_TYPE_SOFTWARE, greenFilterPaint)
-        } else {
-            webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-        }
+        // Фильтр отключён по запросу — сайты показываются в оригинальных цветах
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
     }
 
     /**

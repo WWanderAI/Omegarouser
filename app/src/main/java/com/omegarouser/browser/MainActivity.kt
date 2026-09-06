@@ -50,10 +50,10 @@ class MainActivity : AppCompatActivity() {
 
     private val homeUrl = "file:///android_asset/start_page.html"
 
-    // Нативный зелёный фильтр (работает на уровне пикселей, не зависит от CSP сайта)
+    // Нативный зелёный фильтр — мягкое тонирование (не разворачивает оттенки, а слегка подмешивает зелёный)
     private val greenFilterPaint: Paint by lazy {
         Paint().apply {
-            colorFilter = ColorMatrixColorFilter(buildHueRotationMatrix(100f))
+            colorFilter = ColorMatrixColorFilter(buildGreenTintMatrix())
         }
     }
 
@@ -429,36 +429,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Строит цветовую матрицу поворота оттенка (аналог CSS filter: hue-rotate),
-     * применяется напрямую к пикселям WebView — не зависит от CSP или JS сайта.
+     * Строит цветовую матрицу мягкого зелёного тонирования: слегка приглушает
+     * красный и синий каналы и немного подсвечивает зелёный. В отличие от
+     * hue-rotate это не "переворачивает" цвета сайта, а просто придаёт лёгкий
+     * зелёный оттенок, сохраняя исходные цвета узнаваемыми.
      */
-    private fun buildHueRotationMatrix(degrees: Float): ColorMatrix {
-        val radians = Math.toRadians(degrees.toDouble())
-        val cos = Math.cos(radians).toFloat()
-        val sin = Math.sin(radians).toFloat()
-
-        val matrix = ColorMatrix()
-        matrix.set(
+    private fun buildGreenTintMatrix(): ColorMatrix {
+        return ColorMatrix(
             floatArrayOf(
-                0.213f + cos * 0.787f - sin * 0.213f,
-                0.715f - cos * 0.715f - sin * 0.715f,
-                0.072f - cos * 0.072f + sin * 0.928f,
-                0f, 0f,
-
-                0.213f - cos * 0.213f + sin * 0.143f,
-                0.715f + cos * 0.285f + sin * 0.140f,
-                0.072f - cos * 0.072f - sin * 0.283f,
-                0f, 0f,
-
-                0.213f - cos * 0.213f - sin * 0.787f,
-                0.715f - cos * 0.715f + sin * 0.715f,
-                0.072f + cos * 0.928f + sin * 0.072f,
-                0f, 0f,
-
+                0.92f, 0f, 0f, 0f, 0f,
+                0f, 0.94f, 0f, 0f, 16f,
+                0f, 0f, 0.88f, 0f, 0f,
                 0f, 0f, 0f, 1f, 0f
             )
         )
-        return matrix
     }
 
     private fun displayUrl(url: String): String {

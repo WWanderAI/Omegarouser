@@ -6,4 +6,9 @@
     <string name="nav_reload">Обновить</string>
     <string name="nav_home">Домой</string>
     <string name="ssl_status">Статус соединения</string>
+    <string name="nav_history">История</string>
+    <string name="history_title">История</string>
+    <string name="history_clear">Очистить</string>
+    <string name="history_empty">Пока пусто — здесь появятся посещённые страницы</string>
+    <string name="history_cleared">История очищена</string>
 </resources>

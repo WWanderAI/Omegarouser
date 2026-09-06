@@ -3,6 +3,7 @@ package com.omegarouser.browser
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.DownloadManager
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.ColorMatrix
@@ -44,6 +45,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnForward: ImageButton
     private lateinit var btnReload: ImageButton
     private lateinit var btnHome: ImageButton
+    private lateinit var btnHistory: ImageButton
     private lateinit var sslIndicator: ImageView
 
     private val homeUrl = "file:///android_asset/start_page.html"
@@ -136,14 +138,51 @@ class MainActivity : AppCompatActivity() {
         btnForward = findViewById(R.id.btnForward)
         btnReload = findViewById(R.id.btnReload)
         btnHome = findViewById(R.id.btnHome)
+        btnHistory = findViewById(R.id.btnHistory)
         sslIndicator = findViewById(R.id.sslIndicator)
 
         setupWebView()
         setupControls()
         maybeRequestNotificationPermission()
 
-        webView.loadUrl(homeUrl)
+        val incomingUrl = extractUrlFromIntent(intent)
+        webView.loadUrl(incomingUrl ?: homeUrl)
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val incomingUrl = extractUrlFromIntent(intent)
+        if (incomingUrl != null) {
+            webView.loadUrl(incomingUrl)
+        }
+    }
+
+    /**
+     * Достаёт URL или поисковый запрос из входящего Intent:
+     * - ACTION_VIEW (ссылка из другого приложения, например "Открыть в Omegarouser")
+     * - ACTION_SEND (текст/ссылка через меню "Поделиться")
+     */
+    private fun extractUrlFromIntent(intent: Intent?): String? {
+        if (intent == null) return null
+        return when (intent.action) {
+            Intent.ACTION_VIEW -> intent.data?.toString()
+            Intent.ACTION_SEND -> {
+                if (intent.type == "text/plain") {
+                    val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.trim()
+                    if (text.isNullOrEmpty()) {
+                        null
+                    } else if (Patterns.WEB_URL.matcher(text).matches()) {
+                        if (text.startsWith("http://") || text.startsWith("https://")) text else "https://$text"
+                    } else {
+                        "https://www.google.com/search?q=" + Uri.encode(text)
+                    }
+                } else {
+                    null
+                }
+            }
+            else -> null
+        }
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
@@ -200,6 +239,7 @@ class MainActivity : AppCompatActivity() {
                     setGreenFilterEnabled(!it.startsWith("file:///android_asset"))
                     if (!it.startsWith("file:///android_asset")) {
                         replaceGoogleBranding(view)
+                        HistoryStore.addEntry(this@MainActivity, it, view?.title ?: it)
                     }
                 }
             }
@@ -303,6 +343,9 @@ class MainActivity : AppCompatActivity() {
         }
         btnHome.setOnClickListener {
             webView.loadUrl(homeUrl)
+        }
+        btnHistory.setOnClickListener {
+            startActivity(Intent(this, HistoryActivity::class.java))
         }
 
         addressBar.setOnEditorActionListener { _, actionId, event ->

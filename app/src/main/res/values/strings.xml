@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Omegarouser</string>
-    <string name="search_hint">Поиск в Google или адрес сайта</string>
+    <string name="search_hint">Поиск в интернете или адрес сайта</string>
     <string name="nav_back">Назад</string>
     <string name="nav_forward">Вперёд</string>
     <string name="nav_reload">Обновить</string>

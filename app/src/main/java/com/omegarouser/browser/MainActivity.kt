@@ -198,6 +198,9 @@ class MainActivity : AppCompatActivity() {
                     addressBar.setText(displayUrl(it))
                     updateSslIndicator(it)
                     setGreenFilterEnabled(!it.startsWith("file:///android_asset"))
+                    if (!it.startsWith("file:///android_asset")) {
+                        replaceGoogleBranding(view)
+                    }
                 }
             }
         }
@@ -330,6 +333,47 @@ class MainActivity : AppCompatActivity() {
             }
         }
         webView.loadUrl(url)
+    }
+
+    private fun replaceGoogleBranding(view: WebView?) {
+        val js = """
+            (function() {
+                function shouldSkip(node) {
+                    var p = node.parentNode;
+                    if (!p) return false;
+                    var tag = p.nodeName;
+                    return tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT' ||
+                           tag === 'TEXTAREA' || tag === 'INPUT';
+                }
+                function replaceIn(node) {
+                    if (node.nodeType === 3) {
+                        if (shouldSkip(node)) return;
+                        var t = node.nodeValue;
+                        if (/Gemini|Google/.test(t)) {
+                            node.nodeValue = t.replace(/Gemini/g, 'Omegarouser').replace(/Google/g, 'Omegarouser');
+                        }
+                    } else if (node.nodeType === 1) {
+                        for (var i = 0; i < node.childNodes.length; i++) {
+                            replaceIn(node.childNodes[i]);
+                        }
+                    }
+                }
+                if (document.body) replaceIn(document.body);
+                if (!window.__omegarouserObserver) {
+                    window.__omegarouserObserver = new MutationObserver(function(mutations) {
+                        mutations.forEach(function(m) {
+                            m.addedNodes.forEach(function(n) { replaceIn(n); });
+                        });
+                    });
+                    if (document.body) {
+                        window.__omegarouserObserver.observe(document.body, {
+                            childList: true, subtree: true, characterData: true
+                        });
+                    }
+                }
+            })();
+        """.trimIndent()
+        view?.evaluateJavascript(js, null)
     }
 
     private fun setGreenFilterEnabled(enabled: Boolean) {

@@ -183,6 +183,7 @@ class MainActivity : AppCompatActivity() {
             }
             else -> null
         }
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {

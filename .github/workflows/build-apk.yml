@@ -26,9 +26,11 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
 
       - name: Build debug APK
-        run: gradle assembleDebug
+        run: gradle -v && gradle assembleDebug
 
       - name: Upload APK as build artifact
         uses: actions/upload-artifact@v4

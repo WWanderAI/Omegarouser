@@ -422,7 +422,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setGreenFilterEnabled(enabled: Boolean) {
         if (enabled) {
-            webView.setLayerType(View.LAYER_TYPE_HARDWARE, greenFilterPaint)
+            webView.setLayerType(View.LAYER_TYPE_SOFTWARE, greenFilterPaint)
         } else {
             webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
         }

@@ -49,4 +49,8 @@
     <string name="private_tab_label">Приватная вкладка</string>
     <string name="find_in_page_hint">Найти на странице</string>
     <string name="share_page_title">Поделиться через</string>
+    <string name="voice_search">Голосовой поиск</string>
+    <string name="voice_search_prompt">Говорите — идёт поиск</string>
+    <string name="voice_search_unavailable">Голосовой поиск недоступен на этом устройстве</string>
+    <string name="widget_search_hint">Поиск в Omegarouser</string>
 </resources>

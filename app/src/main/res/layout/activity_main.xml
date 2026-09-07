@@ -54,21 +54,43 @@
                 android:contentDescription="@string/ssl_status"
                 android:src="@drawable/ic_lock_secure" />
 
-            <EditText
-                android:id="@+id/addressBar"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="42dp"
                 android:layout_weight="1"
                 android:layout_marginStart="4dp"
                 android:layout_marginEnd="4dp"
-                android:background="@drawable/bg_address_bar"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:hint="@string/search_hint"
-                android:imeOptions="actionGo"
-                android:inputType="textUri"
-                android:singleLine="true"
-                android:selectAllOnFocus="true" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_address_bar">
+
+                <AutoCompleteTextView
+                    android:id="@+id/addressBar"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="4dp"
+                    android:hint="@string/search_hint"
+                    android:imeOptions="actionGo"
+                    android:inputType="textUri"
+                    android:singleLine="true"
+                    android:selectAllOnFocus="true"
+                    android:completionThreshold="1"
+                    android:dropDownWidth="match_parent"
+                    android:dropDownHorizontalOffset="-6dp" />
+
+                <ImageButton
+                    android:id="@+id/btnVoiceSearch"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:layout_marginEnd="4dp"
+                    android:padding="6dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_mic"
+                    android:contentDescription="@string/voice_search" />
+            </LinearLayout>
 
             <ImageButton
                 android:id="@+id/btnReload"

@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.speech.RecognizerIntent
 import android.util.Patterns
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -28,6 +29,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebStorage
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.AutoCompleteTextView
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageButton
@@ -54,7 +56,13 @@ class TabData(
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var addressBar: EditText
+    companion object {
+        const val EXTRA_FOCUS_SEARCH = "focus_search"
+    }
+
+
+    private lateinit var addressBar: AutoCompleteTextView
+    private lateinit var btnVoiceSearch: ImageButton
     private lateinit var progressBar: ProgressBar
     private lateinit var swipeRefresh: SwipeRefreshLayout
     private lateinit var btnBack: ImageButton
@@ -129,12 +137,27 @@ class MainActivity : AppCompatActivity() {
         callback.onReceiveValue(results)
     }
 
+    private val voiceSearchLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val spoken = result.data
+                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull()
+            if (!spoken.isNullOrBlank()) {
+                addressBar.setText(spoken)
+                navigateFromInput(spoken)
+            }
+        }
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         addressBar = findViewById(R.id.addressBar)
+        btnVoiceSearch = findViewById(R.id.btnVoiceSearch)
         progressBar = findViewById(R.id.progressBar)
         swipeRefresh = findViewById(R.id.swipeRefresh)
         btnBack = findViewById(R.id.btnBack)
@@ -157,6 +180,10 @@ class MainActivity : AppCompatActivity() {
 
         val incomingUrl = extractUrlFromIntent(intent)
         createNewTab(incomingUrl ?: homeUrl, isPrivate = false)
+
+        if (intent.getBooleanExtra(EXTRA_FOCUS_SEARCH, false)) {
+            focusAddressBar()
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -166,6 +193,18 @@ class MainActivity : AppCompatActivity() {
         if (incomingUrl != null) {
             createNewTab(incomingUrl, isPrivate = false)
             hideTabsOverlay()
+        }
+        if (intent.getBooleanExtra(EXTRA_FOCUS_SEARCH, false)) {
+            focusAddressBar()
+        }
+    }
+
+    private fun focusAddressBar() {
+        addressBar.post {
+            addressBar.requestFocus()
+            addressBar.selectAll()
+            val imm = getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager
+            imm?.showSoftInput(addressBar, InputMethodManager.SHOW_IMPLICIT)
         }
     }
 
@@ -482,6 +521,21 @@ class MainActivity : AppCompatActivity() {
 
         swipeRefresh.setOnRefreshListener { currentWebView?.reload() }
 
+        btnVoiceSearch.setOnClickListener { startVoiceSearch() }
+
+        addressBar.threshold = 1
+        addressBar.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) refreshAddressBarSuggestions()
+        }
+        addressBar.setOnItemClickListener { parent, _, position, _ ->
+            val suggestion = (parent.adapter as? SuggestionAdapter)?.getItem(position)
+            if (suggestion != null) {
+                currentWebView?.loadUrl(suggestion.url)
+                addressBar.setText(displayUrl(suggestion.url))
+                addressBar.clearFocus()
+            }
+        }
+
         addressBar.setOnEditorActionListener { _, actionId, event ->
             val isEnter = event != null && event.keyCode == KeyEvent.KEYCODE_ENTER
             if (actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_DONE || isEnter) {
@@ -562,6 +616,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ------------------------- Навигация -------------------------
+
+    private fun startVoiceSearch() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_PROMPT, getString(R.string.voice_search_prompt))
+        }
+        try {
+            voiceSearchLauncher.launch(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, getString(R.string.voice_search_unavailable), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun refreshAddressBarSuggestions() {
+        val history = HistoryStore.getEntries(this).map { Suggestion(it.title, it.url) }
+        val bookmarks = BookmarkStore.getEntries(this).map { Suggestion(it.title, it.url) }
+        val combined = (bookmarks + history).distinctBy { it.url }
+        addressBar.setAdapter(SuggestionAdapter(this, combined))
+    }
 
     private fun navigateFromInput(input: String) {
         val query = input.trim()

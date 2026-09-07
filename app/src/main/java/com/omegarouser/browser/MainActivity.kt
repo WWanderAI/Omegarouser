@@ -413,12 +413,40 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
-                if (document.body) replaceIn(document.body);
+                function replaceLogoImages(root) {
+                    if (!root || !root.querySelectorAll) return;
+                    var selector = 'img[alt*="Google"], img[title*="Google"], ' +
+                        'svg[aria-label*="Google"], [aria-label="Google"]';
+                    var nodes = root.querySelectorAll(selector);
+                    nodes.forEach(function(el) {
+                        if (el.dataset && el.dataset.omegarouserLogoDone) return;
+                        if (el.dataset) el.dataset.omegarouserLogoDone = '1';
+                        var h = el.offsetHeight || 32;
+                        var span = document.createElement('span');
+                        span.textContent = 'Omegarouser';
+                        span.style.fontFamily = 'inherit';
+                        span.style.fontWeight = '700';
+                        span.style.fontSize = Math.max(16, Math.min(h, 40)) + 'px';
+                        span.style.color = '#137333';
+                        span.style.display = 'inline-block';
+                        span.style.letterSpacing = '-0.5px';
+                        el.style.display = 'none';
+                        if (el.parentNode) el.parentNode.insertBefore(span, el);
+                    });
+                }
+                if (document.body) {
+                    replaceIn(document.body);
+                    replaceLogoImages(document);
+                }
                 if (!window.__omegarouserObserver) {
                     window.__omegarouserObserver = new MutationObserver(function(mutations) {
                         mutations.forEach(function(m) {
-                            m.addedNodes.forEach(function(n) { replaceIn(n); });
+                            m.addedNodes.forEach(function(n) {
+                                replaceIn(n);
+                                if (n.nodeType === 1) replaceLogoImages(n);
+                            });
                         });
+                        replaceLogoImages(document);
                     });
                     if (document.body) {
                         window.__omegarouserObserver.observe(document.body, {

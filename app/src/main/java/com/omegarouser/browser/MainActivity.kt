@@ -21,6 +21,8 @@ import android.view.inputmethod.EditorInfo
 import android.webkit.CookieManager
 import android.webkit.GeolocationPermissions
 import android.webkit.PermissionRequest
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -87,6 +89,19 @@ class MainActivity : AppCompatActivity() {
         "popads.net",
         "adcolony.com"
     )
+
+    // Ожидающий колбэк WebView для загрузки файлов через <input type="file">
+    private var filePathCallback: ValueCallback<Array<Uri>>? = null
+
+    private val fileChooserLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val callback = filePathCallback
+        filePathCallback = null
+        if (callback == null) return@registerForActivityResult
+        val results = WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data)
+        callback.onReceiveValue(results)
+    }
 
     // Ожидающий геолокационный колбэк, пока запрашиваем системное разрешение
     private var pendingGeoOrigin: String? = null
@@ -297,6 +312,30 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     pendingPermissionRequest = request
                     requestMediaPermissionsLauncher.launch(neededAndroidPermissions.toTypedArray())
+                }
+            }
+
+            override fun onShowFileChooser(
+                webView: WebView?,
+                filePathCallback: ValueCallback<Array<Uri>>?,
+                fileChooserParams: FileChooserParams?
+            ): Boolean {
+                this@MainActivity.filePathCallback?.onReceiveValue(null)
+                this@MainActivity.filePathCallback = filePathCallback
+
+                val intent = fileChooserParams?.createIntent()
+                return try {
+                    fileChooserLauncher.launch(
+                        intent ?: Intent(Intent.ACTION_GET_CONTENT).apply {
+                            type = "*/*"
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                        }
+                    )
+                    true
+                } catch (e: Exception) {
+                    this@MainActivity.filePathCallback = null
+                    Toast.makeText(this@MainActivity, "Не удалось открыть выбор файла", Toast.LENGTH_SHORT).show()
+                    false
                 }
             }
         }

@@ -25,7 +25,7 @@
             android:layout_marginEnd="2dp"
             android:padding="8dp"
             android:background="@drawable/bg_circle_ripple"
-            android:backgroundTint="@color/google_blue"
+            android:backgroundTint="@color/brand_green"
             android:tint="@android:color/white"
             android:src="@drawable/ic_back"
             android:contentDescription="@string/nav_back" />
@@ -36,7 +36,7 @@
             android:layout_height="36dp"
             android:padding="8dp"
             android:background="@drawable/bg_circle_ripple"
-            android:backgroundTint="@color/google_blue"
+            android:backgroundTint="@color/brand_green"
             android:tint="@android:color/white"
             android:src="@drawable/ic_forward"
             android:contentDescription="@string/nav_forward" />
@@ -73,7 +73,7 @@
             android:layout_marginEnd="2dp"
             android:padding="8dp"
             android:background="@drawable/bg_circle_ripple"
-            android:backgroundTint="@color/google_green"
+            android:backgroundTint="@color/brand_green_light"
             android:tint="@android:color/white"
             android:src="@drawable/ic_reload"
             android:contentDescription="@string/nav_reload" />
@@ -85,7 +85,7 @@
             android:layout_marginEnd="2dp"
             android:padding="8dp"
             android:background="@drawable/bg_circle_ripple"
-            android:backgroundTint="@color/google_red"
+            android:backgroundTint="@color/brand_green_dark"
             android:tint="@android:color/white"
             android:src="@drawable/ic_home"
             android:contentDescription="@string/nav_home" />
@@ -96,7 +96,7 @@
             android:layout_height="36dp"
             android:padding="8dp"
             android:background="@drawable/bg_circle_ripple"
-            android:backgroundTint="@color/google_yellow"
+            android:backgroundTint="@color/brand_green_deepest"
             android:tint="@android:color/white"
             android:src="@drawable/ic_history"
             android:contentDescription="@string/nav_history" />
@@ -109,7 +109,7 @@
         android:layout_width="match_parent"
         android:layout_height="4dp"
         android:max="100"
-        android:progressTint="@color/google_blue"
+        android:progressTint="@color/brand_green"
         android:visibility="gone" />
 
     <!-- WebView с pull-to-refresh -->

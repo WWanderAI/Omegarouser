@@ -61,5 +61,15 @@
             android:name=".DownloadsActivity"
             android:exported="false"
             android:theme="@style/Theme.Omegarouser" />
+
+        <activity
+            android:name=".BookmarksActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Omegarouser" />
+
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Omegarouser" />
     </application>
 </manifest>

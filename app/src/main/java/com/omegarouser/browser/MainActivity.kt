@@ -1,23 +1,23 @@
 package com.omegarouser.browser
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.animation.ObjectAnimator
+import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.ColorMatrix
-import android.graphics.ColorMatrixColorFilter
-import android.graphics.Paint
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.util.Patterns
 import android.view.KeyEvent
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.webkit.CookieManager
 import android.webkit.GeolocationPermissions
 import android.webkit.PermissionRequest
@@ -25,73 +25,99 @@ import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
+import android.webkit.WebStorage
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import java.io.ByteArrayInputStream
 
+/** Данные одной вкладки браузера */
+class TabData(
+    val webView: WebView,
+    var isPrivate: Boolean,
+    var title: String = "",
+    var url: String = ""
+)
+
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var webView: WebView
     private lateinit var addressBar: EditText
     private lateinit var progressBar: ProgressBar
     private lateinit var swipeRefresh: SwipeRefreshLayout
     private lateinit var btnBack: ImageButton
     private lateinit var btnForward: ImageButton
     private lateinit var btnReload: ImageButton
-    private lateinit var btnHome: ImageButton
-    private lateinit var btnHistory: ImageButton
-    private lateinit var btnDownloads: ImageButton
+    private lateinit var btnMenu: ImageButton
+    private lateinit var btnTabs: TextView
     private lateinit var sslIndicator: ImageView
+    private lateinit var tabContainer: FrameLayout
+
+    private lateinit var tabsOverlay: FrameLayout
+    private lateinit var tabsRecyclerView: RecyclerView
+
+    private lateinit var findBar: View
+    private lateinit var findQuery: EditText
+    private lateinit var findMatchCount: TextView
 
     private val homeUrl = "file:///android_asset/start_page.html"
 
-    // Нативный зелёный фильтр — мягкое тонирование (не разворачивает оттенки, а слегка подмешивает зелёный)
-    private val greenFilterPaint: Paint by lazy {
-        Paint().apply {
-            colorFilter = ColorMatrixColorFilter(buildGreenTintMatrix())
-        }
-    }
+    private val tabs = mutableListOf<TabData>()
+    private var currentTabIndex = -1
+    private val currentTab: TabData? get() = tabs.getOrNull(currentTabIndex)
+    private val currentWebView: WebView? get() = currentTab?.webView
 
     // Простой список рекламных/трекинговых доменов для блокировки
     private val adBlockHosts = setOf(
-        "doubleclick.net",
-        "googlesyndication.com",
-        "googleadservices.com",
-        "google-analytics.com",
-        "adservice.google.com",
-        "adsystem.com",
-        "amazon-adsystem.com",
-        "taboola.com",
-        "outbrain.com",
-        "criteo.com",
-        "criteo.net",
-        "moatads.com",
-        "scorecardresearch.com",
-        "adnxs.com",
-        "pubmatic.com",
-        "rubiconproject.com",
-        "mc.yandex.ru",
-        "mc.yandex.com",
-        "an.yandex.ru",
-        "yandexadexchange.net",
-        "vk.com/rtrg",
-        "top-fwz1.mail.ru",
-        "top.mail.ru",
-        "popads.net",
-        "adcolony.com"
+        "doubleclick.net", "googlesyndication.com", "googleadservices.com",
+        "google-analytics.com", "adservice.google.com", "adsystem.com",
+        "amazon-adsystem.com", "taboola.com", "outbrain.com", "criteo.com",
+        "criteo.net", "moatads.com", "scorecardresearch.com", "adnxs.com",
+        "pubmatic.com", "rubiconproject.com", "mc.yandex.ru", "mc.yandex.com",
+        "an.yandex.ru", "yandexadexchange.net", "vk.com/rtrg", "top-fwz1.mail.ru",
+        "top.mail.ru", "popads.net", "adcolony.com"
     )
 
-    // Ожидающий колбэк WebView для загрузки файлов через <input type="file">
+    private var pendingGeoOrigin: String? = null
+    private var pendingGeoCallback: GeolocationPermissions.Callback? = null
+    private var pendingPermissionRequest: PermissionRequest? = null
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
+
+    private val requestGeoPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val origin = pendingGeoOrigin
+        val callback = pendingGeoCallback
+        if (origin != null && callback != null) callback.invoke(origin, granted, false)
+        pendingGeoOrigin = null
+        pendingGeoCallback = null
+    }
+
+    private val requestMediaPermissionsLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        val request = pendingPermissionRequest
+        if (request != null) {
+            if (results.values.all { it }) request.grant(request.resources) else request.deny()
+        }
+        pendingPermissionRequest = null
+    }
+
+    private val requestNotificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
 
     private val fileChooserLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -103,68 +129,34 @@ class MainActivity : AppCompatActivity() {
         callback.onReceiveValue(results)
     }
 
-    // Ожидающий геолокационный колбэк, пока запрашиваем системное разрешение
-    private var pendingGeoOrigin: String? = null
-    private var pendingGeoCallback: GeolocationPermissions.Callback? = null
-
-    // Ожидающий запрос камеры/микрофона от WebView
-    private var pendingPermissionRequest: PermissionRequest? = null
-
-    private val requestGeoPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        val origin = pendingGeoOrigin
-        val callback = pendingGeoCallback
-        if (origin != null && callback != null) {
-            callback.invoke(origin, granted, false)
-        }
-        pendingGeoOrigin = null
-        pendingGeoCallback = null
-    }
-
-    private val requestMediaPermissionsLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { results ->
-        val request = pendingPermissionRequest
-        if (request != null) {
-            val allGranted = results.values.all { it }
-            if (allGranted) {
-                request.grant(request.resources)
-            } else {
-                request.deny()
-                Toast.makeText(this, "Доступ к камере/микрофону не предоставлен", Toast.LENGTH_SHORT).show()
-            }
-        }
-        pendingPermissionRequest = null
-    }
-
-    private val requestNotificationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { /* результат не критичен, загрузка всё равно начнётся */ }
-
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        webView = findViewById(R.id.webView)
         addressBar = findViewById(R.id.addressBar)
         progressBar = findViewById(R.id.progressBar)
         swipeRefresh = findViewById(R.id.swipeRefresh)
         btnBack = findViewById(R.id.btnBack)
         btnForward = findViewById(R.id.btnForward)
         btnReload = findViewById(R.id.btnReload)
-        btnHome = findViewById(R.id.btnHome)
-        btnHistory = findViewById(R.id.btnHistory)
-        btnDownloads = findViewById(R.id.btnDownloads)
+        btnMenu = findViewById(R.id.btnMenu)
+        btnTabs = findViewById(R.id.btnTabs)
         sslIndicator = findViewById(R.id.sslIndicator)
+        tabContainer = findViewById(R.id.tabContainer)
+        tabsOverlay = findViewById(R.id.tabsOverlay)
+        tabsRecyclerView = findViewById(R.id.tabsRecyclerView)
+        findBar = findViewById(R.id.findBar)
+        findQuery = findViewById(R.id.findQuery)
+        findMatchCount = findViewById(R.id.findMatchCount)
 
-        setupWebView()
+        tabsRecyclerView.layoutManager = LinearLayoutManager(this)
+
         setupControls()
         maybeRequestNotificationPermission()
 
         val incomingUrl = extractUrlFromIntent(intent)
-        webView.loadUrl(incomingUrl ?: homeUrl)
+        createNewTab(incomingUrl ?: homeUrl, isPrivate = false)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -172,39 +164,118 @@ class MainActivity : AppCompatActivity() {
         setIntent(intent)
         val incomingUrl = extractUrlFromIntent(intent)
         if (incomingUrl != null) {
-            webView.loadUrl(incomingUrl)
+            createNewTab(incomingUrl, isPrivate = false)
+            hideTabsOverlay()
         }
     }
 
-    /**
-     * Достаёт URL или поисковый запрос из входящего Intent:
-     * - ACTION_VIEW (ссылка из другого приложения, например "Открыть в Omegarouser")
-     * - ACTION_SEND (текст/ссылка через меню "Поделиться")
-     */
-    private fun extractUrlFromIntent(intent: Intent?): String? {
-        if (intent == null) return null
-        return when (intent.action) {
-            Intent.ACTION_VIEW -> intent.data?.toString()
-            Intent.ACTION_SEND -> {
-                if (intent.type == "text/plain") {
-                    val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.trim()
-                    if (text.isNullOrEmpty()) {
-                        null
-                    } else if (Patterns.WEB_URL.matcher(text).matches()) {
-                        if (text.startsWith("http://") || text.startsWith("https://")) text else "https://$text"
-                    } else {
-                        "https://www.google.com/search?q=" + Uri.encode(text)
-                    }
-                } else {
-                    null
-                }
-            }
-            else -> null
-        }
+    // ------------------------- Вкладки -------------------------
+
+    private fun createNewTab(url: String, isPrivate: Boolean) {
+        val webView = WebView(this)
+        webView.layoutParams = FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+        )
+        val tab = TabData(webView, isPrivate, title = getString(R.string.tabs_new_tab), url = url)
+        configureWebView(tab)
+        tabContainer.addView(webView)
+        tabs.add(tab)
+        switchToTab(tabs.lastIndex)
+        webView.loadUrl(url)
+        updateTabsButtonCount()
     }
+
+    private fun switchToTab(index: Int) {
+        if (index < 0 || index >= tabs.size) return
+        tabs.forEachIndexed { i, t -> t.webView.visibility = if (i == index) View.VISIBLE else View.GONE }
+        currentTabIndex = index
+        val tab = tabs[index]
+        addressBar.setText(displayUrl(tab.url))
+        updateSslIndicator(tab.url)
+        updateNavButtons()
+    }
+
+    private fun closeTab(index: Int) {
+        if (index < 0 || index >= tabs.size) return
+        val closed = tabs[index]
+        tabContainer.removeView(closed.webView)
+        closed.webView.destroy()
+        tabs.removeAt(index)
+
+        val wasPrivate = closed.isPrivate
+        if (wasPrivate && tabs.none { it.isPrivate }) {
+            // Последняя приватная вкладка закрыта — подчищаем куки и данные сайтов.
+            // Ограничение: это очищает куки для ВСЕХ вкладок, т.к. Android WebView
+            // использует общее хранилище кук на всё приложение.
+            CookieManager.getInstance().removeAllCookies(null)
+            WebStorage.getInstance().deleteAllData()
+        }
+
+        if (tabs.isEmpty()) {
+            createNewTab(homeUrl, isPrivate = false)
+        } else {
+            val newIndex = (index - 1).coerceAtLeast(0).coerceAtMost(tabs.size - 1)
+            switchToTab(newIndex)
+        }
+        updateTabsButtonCount()
+    }
+
+    private fun updateTabsButtonCount() {
+        btnTabs.text = tabs.size.toString()
+    }
+
+    private fun showTabsOverlay() {
+        tabsOverlay.visibility = View.VISIBLE
+        tabsRecyclerView.adapter = TabsAdapter(
+            tabs,
+            onSelect = { index -> switchToTab(index); hideTabsOverlay() },
+            onClose = { index -> closeTab(index); tabsRecyclerView.adapter?.notifyDataSetChanged() }
+        )
+    }
+
+    private fun hideTabsOverlay() {
+        tabsOverlay.visibility = View.GONE
+    }
+
+    private class TabsAdapter(
+        private val items: List<TabData>,
+        private val onSelect: (Int) -> Unit,
+        private val onClose: (Int) -> Unit
+    ) : RecyclerView.Adapter<TabsAdapter.ViewHolder>() {
+
+        class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+            val title: TextView = view.findViewById(R.id.tabTitle)
+            val url: TextView = view.findViewById(R.id.tabUrl)
+            val close: ImageButton = view.findViewById(R.id.tabClose)
+            val privateIndicator: View = view.findViewById(R.id.tabPrivateIndicator)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_tab, parent, false)
+            return ViewHolder(view)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val tab = items[position]
+            holder.title.text = if (tab.isPrivate) {
+                "🔒 " + (tab.title.ifBlank { holder.itemView.context.getString(R.string.tabs_new_tab) })
+            } else {
+                tab.title.ifBlank { holder.itemView.context.getString(R.string.tabs_new_tab) }
+            }
+            holder.url.text = tab.url
+            holder.privateIndicator.visibility = if (tab.isPrivate) View.VISIBLE else View.GONE
+            holder.itemView.setOnClickListener { onSelect(position) }
+            holder.close.setOnClickListener { onClose(position) }
+        }
+
+        override fun getItemCount(): Int = items.size
+    }
+
+    // ------------------------- Настройка WebView вкладки -------------------------
 
     @SuppressLint("SetJavaScriptEnabled")
-    private fun setupWebView() {
+    private fun configureWebView(tab: TabData) {
+        val webView = tab.webView
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
         webView.settings.loadWithOverviewMode = true
@@ -224,52 +295,62 @@ class MainActivity : AppCompatActivity() {
                 view: WebView?,
                 request: WebResourceRequest?
             ): WebResourceResponse? {
+                if (!SettingsStore.isAdblockEnabled(this@MainActivity)) {
+                    return super.shouldInterceptRequest(view, request)
+                }
                 val host = request?.url?.host?.lowercase()
                 if (host != null && adBlockHosts.any { host.contains(it) }) {
-                    return WebResourceResponse(
-                        "text/plain",
-                        "utf-8",
-                        ByteArrayInputStream(ByteArray(0))
-                    )
+                    return WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream(ByteArray(0)))
                 }
                 return super.shouldInterceptRequest(view, request)
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
-                progressBar.max = 100
-                progressBar.progress = 0
-                progressBar.visibility = ProgressBar.VISIBLE
-                url?.let {
-                    addressBar.setText(displayUrl(it))
-                    updateSslIndicator(it)
-                    setGreenFilterEnabled(!it.startsWith("file:///android_asset"))
+                tab.url = url ?: tab.url
+                if (tab === currentTab) {
+                    progressBar.max = 100
+                    progressBar.progress = 0
+                    progressBar.visibility = ProgressBar.VISIBLE
+                    addressBar.setText(displayUrl(tab.url))
+                    updateSslIndicator(tab.url)
                 }
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                progressBar.visibility = ProgressBar.GONE
-                swipeRefresh.isRefreshing = false
-                updateNavButtons()
-                url?.let {
-                    addressBar.setText(displayUrl(it))
-                    updateSslIndicator(it)
-                    setGreenFilterEnabled(!it.startsWith("file:///android_asset"))
-                    if (!it.startsWith("file:///android_asset")) {
-                        replaceGoogleBranding(view)
-                        HistoryStore.addEntry(this@MainActivity, it, view?.title ?: it)
+                tab.url = url ?: tab.url
+                tab.title = view?.title ?: tab.title
+
+                if (tab === currentTab) {
+                    progressBar.visibility = ProgressBar.GONE
+                    swipeRefresh.isRefreshing = false
+                    updateNavButtons()
+                    addressBar.setText(displayUrl(tab.url))
+                    updateSslIndicator(tab.url)
+                }
+
+                if (url != null && !url.startsWith("file:///android_asset")) {
+                    replaceGoogleBranding(view)
+                    if (!tab.isPrivate) {
+                        HistoryStore.addEntry(this@MainActivity, url, tab.title)
                     }
                 }
             }
         }
 
-        webView.webChromeClient = object : android.webkit.WebChromeClient() {
+        webView.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 super.onProgressChanged(view, newProgress)
-                ObjectAnimator.ofInt(progressBar, "progress", progressBar.progress, newProgress)
-                    .setDuration(200)
-                    .start()
+                if (tab === currentTab) {
+                    ObjectAnimator.ofInt(progressBar, "progress", progressBar.progress, newProgress)
+                        .setDuration(200).start()
+                }
+            }
+
+            override fun onReceivedTitle(view: WebView?, title: String?) {
+                super.onReceivedTitle(view, title)
+                if (title != null) tab.title = title
             }
 
             override fun onGeolocationPermissionsShowPrompt(
@@ -291,27 +372,22 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPermissionRequest(request: PermissionRequest?) {
                 if (request == null) return
-                val neededAndroidPermissions = mutableListOf<String>()
+                val needed = mutableListOf<String>()
                 for (resource in request.resources) {
                     when (resource) {
-                        PermissionRequest.RESOURCE_VIDEO_CAPTURE ->
-                            neededAndroidPermissions.add(Manifest.permission.CAMERA)
-                        PermissionRequest.RESOURCE_AUDIO_CAPTURE ->
-                            neededAndroidPermissions.add(Manifest.permission.RECORD_AUDIO)
+                        PermissionRequest.RESOURCE_VIDEO_CAPTURE -> needed.add(Manifest.permission.CAMERA)
+                        PermissionRequest.RESOURCE_AUDIO_CAPTURE -> needed.add(Manifest.permission.RECORD_AUDIO)
                     }
                 }
-                if (neededAndroidPermissions.isEmpty()) {
-                    request.grant(request.resources)
-                    return
-                }
-                val allGranted = neededAndroidPermissions.all {
+                if (needed.isEmpty()) { request.grant(request.resources); return }
+                val allGranted = needed.all {
                     ContextCompat.checkSelfPermission(this@MainActivity, it) == PackageManager.PERMISSION_GRANTED
                 }
                 if (allGranted) {
                     request.grant(request.resources)
                 } else {
                     pendingPermissionRequest = request
-                    requestMediaPermissionsLauncher.launch(neededAndroidPermissions.toTypedArray())
+                    requestMediaPermissionsLauncher.launch(needed.toTypedArray())
                 }
             }
 
@@ -322,7 +398,6 @@ class MainActivity : AppCompatActivity() {
             ): Boolean {
                 this@MainActivity.filePathCallback?.onReceiveValue(null)
                 this@MainActivity.filePathCallback = filePathCallback
-
                 val intent = fileChooserParams?.createIntent()
                 return try {
                     fileChooserLauncher.launch(
@@ -334,7 +409,6 @@ class MainActivity : AppCompatActivity() {
                     true
                 } catch (e: Exception) {
                     this@MainActivity.filePathCallback = null
-                    Toast.makeText(this@MainActivity, "Не удалось открыть выбор файла", Toast.LENGTH_SHORT).show()
                     false
                 }
             }
@@ -361,8 +435,14 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        swipeRefresh.setOnRefreshListener {
-            webView.reload()
+        webView.setFindListener { activeMatchOrdinal, numberOfMatches, isDoneCounting ->
+            if (tab === currentTab && isDoneCounting) {
+                findMatchCount.text = if (numberOfMatches > 0) {
+                    "${activeMatchOrdinal + 1}/$numberOfMatches"
+                } else {
+                    "0/0"
+                }
+            }
         }
     }
 
@@ -371,62 +451,175 @@ class MainActivity : AppCompatActivity() {
             val granted = ContextCompat.checkSelfPermission(
                 this, Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
-            if (!granted) {
-                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
+            if (!granted) requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
+    // ------------------------- Панель управления -------------------------
+
     private fun setupControls() {
-        btnBack.setOnClickListener {
-            if (webView.canGoBack()) webView.goBack()
+        btnBack.setOnClickListener { currentWebView?.let { if (it.canGoBack()) it.goBack() } }
+        btnForward.setOnClickListener { currentWebView?.let { if (it.canGoForward()) it.goForward() } }
+        btnReload.setOnClickListener { currentWebView?.reload() }
+        btnTabs.setOnClickListener { showTabsOverlay() }
+        btnMenu.setOnClickListener { showMainMenu(it) }
+
+        findViewById<ImageButton>(R.id.btnCloseTabsOverlay).setOnClickListener { hideTabsOverlay() }
+        findViewById<ImageButton>(R.id.btnNewTabFromOverlay).setOnClickListener {
+            createNewTab(homeUrl, isPrivate = false)
+            hideTabsOverlay()
         }
-        btnForward.setOnClickListener {
-            if (webView.canGoForward()) webView.goForward()
+
+        findViewById<ImageButton>(R.id.findPrev).setOnClickListener { currentWebView?.findNext(false) }
+        findViewById<ImageButton>(R.id.findNext).setOnClickListener { currentWebView?.findNext(true) }
+        findViewById<ImageButton>(R.id.findClose).setOnClickListener { hideFindBar() }
+        findQuery.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                currentWebView?.findAllAsync(findQuery.text.toString())
+                true
+            } else false
         }
-        btnReload.setOnClickListener {
-            webView.reload()
-        }
-        btnHome.setOnClickListener {
-            webView.loadUrl(homeUrl)
-        }
-        btnHistory.setOnClickListener {
-            startActivity(Intent(this, HistoryActivity::class.java))
-            overridePendingTransition(R.anim.slide_in_right, R.anim.fade_out_slight)
-        }
-        btnDownloads.setOnClickListener {
-            startActivity(Intent(this, DownloadsActivity::class.java))
-            overridePendingTransition(R.anim.slide_in_right, R.anim.fade_out_slight)
-        }
+
+        swipeRefresh.setOnRefreshListener { currentWebView?.reload() }
 
         addressBar.setOnEditorActionListener { _, actionId, event ->
             val isEnter = event != null && event.keyCode == KeyEvent.KEYCODE_ENTER
             if (actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_DONE || isEnter) {
                 navigateFromInput(addressBar.text.toString())
                 true
-            } else {
-                false
-            }
+            } else false
         }
     }
+
+    private fun showMainMenu(anchor: View) {
+        val popup = PopupMenu(this, anchor)
+        val isBookmarked = currentTab?.url?.let { BookmarkStore.isBookmarked(this, it) } ?: false
+
+        popup.menu.add(0, 1, 0, R.string.menu_home)
+        popup.menu.add(0, 2, 1, R.string.menu_bookmarks)
+        popup.menu.add(0, 3, 2, if (isBookmarked) R.string.menu_remove_bookmark else R.string.menu_add_bookmark)
+        popup.menu.add(0, 4, 3, R.string.menu_history)
+        popup.menu.add(0, 5, 4, R.string.menu_downloads)
+        popup.menu.add(0, 6, 5, R.string.menu_find_in_page)
+        popup.menu.add(0, 7, 6, R.string.menu_share)
+        popup.menu.add(0, 8, 7, R.string.menu_new_private_tab)
+        popup.menu.add(0, 9, 8, R.string.menu_settings)
+
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> currentWebView?.loadUrl(homeUrl)
+                2 -> openScreen(BookmarksActivity::class.java)
+                3 -> toggleBookmarkForCurrentTab()
+                4 -> openScreen(HistoryActivity::class.java)
+                5 -> openScreen(DownloadsActivity::class.java)
+                6 -> showFindBar()
+                7 -> shareCurrentPage()
+                8 -> createNewTab(homeUrl, isPrivate = true)
+                9 -> openScreen(SettingsActivity::class.java)
+            }
+            true
+        }
+        popup.show()
+    }
+
+    private fun <T> openScreen(activityClass: Class<T>) {
+        startActivity(Intent(this, activityClass))
+        overridePendingTransition(R.anim.slide_in_right, R.anim.fade_out_slight)
+    }
+
+    private fun toggleBookmarkForCurrentTab() {
+        val tab = currentTab ?: return
+        if (tab.url.startsWith("file:///android_asset")) return
+        val added = BookmarkStore.toggle(this, tab.url, tab.title)
+        val message = if (added) getString(R.string.bookmark_added) else getString(R.string.bookmark_removed)
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun shareCurrentPage() {
+        val url = currentTab?.url ?: return
+        if (url.startsWith("file:///android_asset")) return
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, url)
+        }
+        startActivity(Intent.createChooser(intent, getString(R.string.share_page_title)))
+    }
+
+    private fun showFindBar() {
+        findBar.visibility = View.VISIBLE
+        findQuery.requestFocus()
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.showSoftInput(findQuery, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun hideFindBar() {
+        findBar.visibility = View.GONE
+        currentWebView?.clearMatches()
+        findQuery.setText("")
+        findMatchCount.text = ""
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.hideSoftInputFromWindow(findQuery.windowToken, 0)
+    }
+
+    // ------------------------- Навигация -------------------------
 
     private fun navigateFromInput(input: String) {
         val query = input.trim()
         if (query.isEmpty()) return
-
         val url = when {
             Patterns.WEB_URL.matcher(query).matches() -> {
-                if (!query.startsWith("http://") && !query.startsWith("https://")) {
-                    "https://$query"
-                } else {
-                    query
-                }
+                if (!query.startsWith("http://") && !query.startsWith("https://")) "https://$query" else query
             }
-            else -> {
-                "https://www.google.com/search?q=" + Uri.encode(query)
-            }
+            else -> SettingsStore.searchUrl(this, query)
         }
-        webView.loadUrl(url)
+        currentWebView?.loadUrl(url)
+    }
+
+    private fun extractUrlFromIntent(intent: Intent?): String? {
+        if (intent == null) return null
+        return when (intent.action) {
+            Intent.ACTION_VIEW -> intent.data?.toString()
+            Intent.ACTION_SEND -> {
+                if (intent.type == "text/plain") {
+                    val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.trim()
+                    if (text.isNullOrEmpty()) {
+                        null
+                    } else if (Patterns.WEB_URL.matcher(text).matches()) {
+                        if (text.startsWith("http://") || text.startsWith("https://")) text else "https://$text"
+                    } else {
+                        SettingsStore.searchUrl(this, text)
+                    }
+                } else null
+            }
+            else -> null
+        }
+    }
+
+    private fun displayUrl(url: String): String {
+        return if (url.startsWith("file:///android_asset/start_page.html")) "" else url
+    }
+
+    private fun updateSslIndicator(url: String) {
+        when {
+            url.startsWith("file:///android_asset") -> sslIndicator.visibility = ImageView.GONE
+            url.startsWith("https://") -> {
+                sslIndicator.visibility = ImageView.VISIBLE
+                sslIndicator.setImageResource(R.drawable.ic_lock_secure)
+            }
+            url.startsWith("http://") -> {
+                sslIndicator.visibility = ImageView.VISIBLE
+                sslIndicator.setImageResource(R.drawable.ic_lock_insecure)
+            }
+            else -> sslIndicator.visibility = ImageView.GONE
+        }
+    }
+
+    private fun updateNavButtons() {
+        val wv = currentWebView
+        btnBack.isEnabled = wv?.canGoBack() == true
+        btnForward.isEnabled = wv?.canGoForward() == true
+        btnBack.alpha = if (wv?.canGoBack() == true) 1.0f else 0.4f
+        btnForward.alpha = if (wv?.canGoForward() == true) 1.0f else 0.4f
     }
 
     private fun replaceGoogleBranding(view: WebView?) {
@@ -498,63 +691,13 @@ class MainActivity : AppCompatActivity() {
         view?.evaluateJavascript(js, null)
     }
 
-    private fun setGreenFilterEnabled(enabled: Boolean) {
-        // Фильтр отключён по запросу — сайты показываются в оригинальных цветах
-        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
-    }
-
-    /**
-     * Строит цветовую матрицу мягкого зелёного тонирования: слегка приглушает
-     * красный и синий каналы и немного подсвечивает зелёный. В отличие от
-     * hue-rotate это не "переворачивает" цвета сайта, а просто придаёт лёгкий
-     * зелёный оттенок, сохраняя исходные цвета узнаваемыми.
-     */
-    private fun buildGreenTintMatrix(): ColorMatrix {
-        return ColorMatrix(
-            floatArrayOf(
-                0.92f, 0f, 0f, 0f, 0f,
-                0f, 0.94f, 0f, 0f, 16f,
-                0f, 0f, 0.88f, 0f, 0f,
-                0f, 0f, 0f, 1f, 0f
-            )
-        )
-    }
-
-    private fun displayUrl(url: String): String {
-        return if (url.startsWith("file:///android_asset/start_page.html")) "" else url
-    }
-
-    private fun updateSslIndicator(url: String) {
-        when {
-            url.startsWith("file:///android_asset") -> {
-                sslIndicator.visibility = ImageView.GONE
-            }
-            url.startsWith("https://") -> {
-                sslIndicator.visibility = ImageView.VISIBLE
-                sslIndicator.setImageResource(R.drawable.ic_lock_secure)
-            }
-            url.startsWith("http://") -> {
-                sslIndicator.visibility = ImageView.VISIBLE
-                sslIndicator.setImageResource(R.drawable.ic_lock_insecure)
-            }
-            else -> {
-                sslIndicator.visibility = ImageView.GONE
-            }
-        }
-    }
-
-    private fun updateNavButtons() {
-        btnBack.isEnabled = webView.canGoBack()
-        btnForward.isEnabled = webView.canGoForward()
-        btnBack.alpha = if (webView.canGoBack()) 1.0f else 0.4f
-        btnForward.alpha = if (webView.canGoForward()) 1.0f else 0.4f
-    }
-
     override fun onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack()
-        } else {
-            super.onBackPressed()
+        when {
+            tabsOverlay.visibility == View.VISIBLE -> hideTabsOverlay()
+            findBar.visibility == View.VISIBLE -> hideFindBar()
+            currentWebView?.canGoBack() == true -> currentWebView?.goBack()
+            tabs.size > 1 -> closeTab(currentTabIndex)
+            else -> super.onBackPressed()
         }
     }
 }

@@ -18,4 +18,35 @@
     <string name="downloads_cleared">Список загрузок очищен</string>
     <string name="download_not_found">Файл не найден — возможно, он был удалён</string>
     <string name="download_failed">Ошибка загрузки</string>
+
+    <string name="bookmarks_title">Закладки</string>
+    <string name="bookmarks_clear">Очистить</string>
+    <string name="bookmarks_empty">Пока пусто — нажми на звезду в меню, чтобы добавить страницу</string>
+    <string name="bookmarks_cleared">Закладки очищены</string>
+    <string name="bookmark_added">Добавлено в закладки</string>
+    <string name="bookmark_removed">Убрано из закладок</string>
+
+    <string name="settings_title">Настройки</string>
+    <string name="settings_adblock_title">Блокировка рекламы</string>
+    <string name="settings_adblock_subtitle">Блокирует рекламные и трекинговые домены</string>
+    <string name="settings_search_engine_title">Поисковая система</string>
+    <string name="settings_permissions_title">Разрешения сайтов</string>
+    <string name="settings_permissions_subtitle">Камера, микрофон, геолокация, уведомления — системные настройки приложения</string>
+
+    <string name="menu_home">Домой</string>
+    <string name="menu_bookmarks">Закладки</string>
+    <string name="menu_add_bookmark">Добавить в закладки</string>
+    <string name="menu_remove_bookmark">Убрать из закладок</string>
+    <string name="menu_history">История</string>
+    <string name="menu_downloads">Загрузки</string>
+    <string name="menu_find_in_page">Найти на странице</string>
+    <string name="menu_share">Поделиться страницей</string>
+    <string name="menu_new_private_tab">Новая приватная вкладка</string>
+    <string name="menu_settings">Настройки</string>
+
+    <string name="tabs_title">Вкладки</string>
+    <string name="tabs_new_tab">Новая вкладка</string>
+    <string name="private_tab_label">Приватная вкладка</string>
+    <string name="find_in_page_hint">Найти на странице</string>
+    <string name="share_page_title">Поделиться через</string>
 </resources>

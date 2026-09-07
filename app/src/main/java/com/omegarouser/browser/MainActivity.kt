@@ -47,6 +47,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnReload: ImageButton
     private lateinit var btnHome: ImageButton
     private lateinit var btnHistory: ImageButton
+    private lateinit var btnDownloads: ImageButton
     private lateinit var sslIndicator: ImageView
 
     private val homeUrl = "file:///android_asset/start_page.html"
@@ -140,6 +141,7 @@ class MainActivity : AppCompatActivity() {
         btnReload = findViewById(R.id.btnReload)
         btnHome = findViewById(R.id.btnHome)
         btnHistory = findViewById(R.id.btnHistory)
+        btnDownloads = findViewById(R.id.btnDownloads)
         sslIndicator = findViewById(R.id.sslIndicator)
 
         setupWebView()
@@ -312,7 +314,8 @@ class MainActivity : AppCompatActivity() {
                 request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
                 val dm = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
-                dm.enqueue(request)
+                val downloadId = dm.enqueue(request)
+                DownloadStore.addEntry(this, downloadId, fileName, url, mimeType ?: "*/*")
                 Toast.makeText(this, "Скачивание начато: $fileName", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 Toast.makeText(this, "Не удалось начать скачивание", Toast.LENGTH_SHORT).show()
@@ -350,6 +353,10 @@ class MainActivity : AppCompatActivity() {
         }
         btnHistory.setOnClickListener {
             startActivity(Intent(this, HistoryActivity::class.java))
+            overridePendingTransition(R.anim.slide_in_right, R.anim.fade_out_slight)
+        }
+        btnDownloads.setOnClickListener {
+            startActivity(Intent(this, DownloadsActivity::class.java))
             overridePendingTransition(R.anim.slide_in_right, R.anim.fade_out_slight)
         }
 

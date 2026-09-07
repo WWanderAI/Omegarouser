@@ -55,5 +55,10 @@
             android:name=".HistoryActivity"
             android:exported="false"
             android:theme="@style/Theme.Omegarouser" />
+
+        <activity
+            android:name=".DownloadsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Omegarouser" />
     </application>
 </manifest>

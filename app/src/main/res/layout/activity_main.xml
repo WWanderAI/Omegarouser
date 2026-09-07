@@ -94,12 +94,24 @@
             android:id="@+id/btnHistory"
             android:layout_width="36dp"
             android:layout_height="36dp"
+            android:layout_marginEnd="2dp"
             android:padding="8dp"
             android:background="@drawable/bg_circle_ripple"
             android:backgroundTint="@color/brand_green_deepest"
             android:tint="@android:color/white"
             android:src="@drawable/ic_history"
             android:contentDescription="@string/nav_history" />
+
+        <ImageButton
+            android:id="@+id/btnDownloads"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:padding="8dp"
+            android:background="@drawable/bg_circle_ripple"
+            android:backgroundTint="@color/brand_green_light"
+            android:tint="@android:color/white"
+            android:src="@drawable/ic_download"
+            android:contentDescription="@string/nav_downloads" />
     </LinearLayout>
 
     <!-- Индикатор загрузки -->

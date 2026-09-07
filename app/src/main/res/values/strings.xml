@@ -17,4 +17,5 @@
     <string name="downloads_empty">Пока пусто — здесь появятся скачанные файлы</string>
     <string name="downloads_cleared">Список загрузок очищен</string>
     <string name="download_not_found">Файл не найден — возможно, он был удалён</string>
+    <string name="download_failed">Ошибка загрузки</string>
 </resources>

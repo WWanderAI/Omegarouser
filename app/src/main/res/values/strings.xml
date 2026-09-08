@@ -54,4 +54,31 @@
     <string name="voice_search_prompt">Говорите — идёт поиск</string>
     <string name="voice_search_unavailable">Голосовой поиск недоступен на этом устройстве</string>
     <string name="widget_search_hint">Поиск в Omegarouser</string>
+
+    <string name="link_context_new_tab">Открыть в новой вкладке</string>
+    <string name="link_context_copy">Скопировать ссылку</string>
+    <string name="link_context_share">Поделиться ссылкой</string>
+    <string name="link_copied">Ссылка скопирована</string>
+
+    <string name="phishing_warning_title">⚠ Возможно опасный сайт</string>
+    <string name="phishing_warning_message">Этот адрес похож на попытку выдать себя за другой известный сайт. Будь осторожен — не вводи пароли и данные карт, если не уверен(а) в сайте.\n\n%1$s</string>
+    <string name="phishing_continue">Всё равно перейти</string>
+    <string name="phishing_go_back">Назад</string>
+
+    <string name="passwords_title">Пароли</string>
+    <string name="passwords_empty">Пока пусто. Пароли хранятся в зашифрованном виде на устройстве и никуда не передаются.</string>
+    <string name="passwords_add_title">Добавить пароль</string>
+    <string name="passwords_save">Сохранить</string>
+    <string name="passwords_cancel">Отмена</string>
+    <string name="passwords_fill_all">Заполни все поля</string>
+    <string name="passwords_hint_site">Сайт (например vk.com)</string>
+    <string name="passwords_hint_username">Логин или email</string>
+    <string name="passwords_hint_password">Пароль</string>
+    <string name="menu_passwords">Пароли</string>
+    <string name="menu_autofill">Автозаполнить пароль</string>
+    <string name="autofill_not_found">Для этого сайта пока нет сохранённого пароля</string>
+    <string name="autofill_done">Форма заполнена</string>
+
+    <string name="menu_qr_scan">Сканировать QR-код</string>
+    <string name="qr_scan_prompt">Наведите камеру на QR-код</string>
 </resources>

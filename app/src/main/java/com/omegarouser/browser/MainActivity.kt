@@ -4,6 +4,9 @@ import android.Manifest
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.app.DownloadManager
+import android.app.AlertDialog
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -44,6 +47,9 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
+import org.json.JSONObject
 import java.io.ByteArrayInputStream
 
 /** Данные одной вкладки браузера */
@@ -149,6 +155,16 @@ class MainActivity : AppCompatActivity() {
                 addressBar.setText(spoken)
                 navigateFromInput(spoken)
             }
+        }
+    }
+
+    private val qrScanLauncher = registerForActivityResult(ScanContract()) { result ->
+        val scanned = result.contents ?: return@registerForActivityResult
+        if (Patterns.WEB_URL.matcher(scanned).matches()) {
+            val url = if (scanned.startsWith("http://") || scanned.startsWith("https://")) scanned else "https://$scanned"
+            currentWebView?.loadUrl(url)
+        } else {
+            navigateFromInput(scanned)
         }
     }
 
@@ -349,6 +365,15 @@ class MainActivity : AppCompatActivity() {
                 return super.shouldInterceptRequest(view, request)
             }
 
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                val url = request?.url?.toString() ?: return false
+                if (isSuspiciousUrl(url) && !confirmedSuspiciousUrls.contains(url)) {
+                    showPhishingWarning(url)
+                    return true
+                }
+                return false
+            }
+
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
                 tab.url = url ?: tab.url
@@ -488,6 +513,20 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
+        webView.setOnLongClickListener {
+            val result = webView.hitTestResult
+            val linkUrl = when (result.type) {
+                WebView.HitTestResult.SRC_ANCHOR_TYPE, WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE -> result.extra
+                else -> null
+            }
+            if (linkUrl != null) {
+                showLinkContextMenu(linkUrl, tab.isPrivate)
+                true
+            } else {
+                false
+            }
+        }
     }
 
     private fun maybeRequestNotificationPermission() {
@@ -563,6 +602,9 @@ class MainActivity : AppCompatActivity() {
         popup.menu.add(0, 7, 6, R.string.menu_share)
         popup.menu.add(0, 8, 7, R.string.menu_new_private_tab)
         popup.menu.add(0, 9, 8, R.string.menu_settings)
+        popup.menu.add(0, 10, 9, R.string.menu_passwords)
+        popup.menu.add(0, 11, 10, R.string.menu_autofill)
+        popup.menu.add(0, 12, 11, R.string.menu_qr_scan)
 
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
@@ -575,6 +617,9 @@ class MainActivity : AppCompatActivity() {
                 7 -> shareCurrentPage()
                 8 -> createNewTab(homeUrl, isPrivate = true)
                 9 -> openScreen(SettingsActivity::class.java)
+                10 -> openScreen(PasswordsActivity::class.java)
+                11 -> autofillPasswordForCurrentTab()
+                12 -> startQrScan()
             }
             true
         }
@@ -593,6 +638,113 @@ class MainActivity : AppCompatActivity() {
         OmegarouserBookmarksWidgetProvider.requestUpdate(this)
         val message = if (added) getString(R.string.bookmark_added) else getString(R.string.bookmark_removed)
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun autofillPasswordForCurrentTab() {
+        val tab = currentTab ?: return
+        val host = try { Uri.parse(tab.url).host } catch (e: Exception) { null } ?: return
+        val credential = PasswordStore.findForHost(this, host)
+        if (credential == null) {
+            Toast.makeText(this, getString(R.string.autofill_not_found), Toast.LENGTH_SHORT).show()
+            return
+        }
+        val js = """
+            (function() {
+                var pw = document.querySelector('input[type=password]');
+                if (!pw) return;
+                var user = null;
+                var inputs = document.querySelectorAll('input[type=text], input[type=email], input:not([type])');
+                for (var i = 0; i < inputs.length; i++) {
+                    if (inputs[i].compareDocumentPosition(pw) & Node.DOCUMENT_POSITION_FOLLOWING) {
+                        user = inputs[i];
+                    }
+                }
+                function setVal(el, val) {
+                    var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                    nativeSetter.call(el, val);
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                if (user) setVal(user, ${JSONObject.quote(credential.username)});
+                setVal(pw, ${JSONObject.quote(credential.password)});
+            })();
+        """.trimIndent()
+        currentWebView?.evaluateJavascript(js) {
+            Toast.makeText(this, getString(R.string.autofill_done), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun startQrScan() {
+        val options = ScanOptions()
+        options.setPrompt(getString(R.string.qr_scan_prompt))
+        options.setBeepEnabled(true)
+        options.setOrientationLocked(false)
+        qrScanLauncher.launch(options)
+    }
+
+    private fun showLinkContextMenu(url: String, isPrivate: Boolean) {
+        AlertDialog.Builder(this)
+            .setItems(
+                arrayOf(
+                    getString(R.string.link_context_new_tab),
+                    getString(R.string.link_context_copy),
+                    getString(R.string.link_context_share)
+                )
+            ) { _, which ->
+                when (which) {
+                    0 -> createNewTab(url, isPrivate)
+                    1 -> {
+                        val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("url", url))
+                        Toast.makeText(this, getString(R.string.link_copied), Toast.LENGTH_SHORT).show()
+                    }
+                    2 -> {
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, url)
+                        }
+                        startActivity(Intent.createChooser(intent, getString(R.string.share_page_title)))
+                    }
+                }
+            }
+            .show()
+    }
+
+    /**
+     * Простая эвристическая проверка на фишинг: сырой IP-адрес вместо домена,
+     * или домен, маскирующийся под известный бренд (содержит его имя, но не
+     * является официальным доменом). Это НЕ полноценная защита уровня Safe
+     * Browsing — только базовая эвристика.
+     */
+    private val brandDomains = mapOf(
+        "paypal" to "paypal.com", "google" to "google.com", "apple" to "apple.com",
+        "microsoft" to "microsoft.com", "sberbank" to "sberbank.ru", "vk" to "vk.com",
+        "gosuslugi" to "gosuslugi.ru", "instagram" to "instagram.com", "facebook" to "facebook.com",
+        "whatsapp" to "whatsapp.com", "telegram" to "telegram.org", "steam" to "steampowered.com"
+    )
+    private val confirmedSuspiciousUrls = mutableSetOf<String>()
+
+    private fun isSuspiciousUrl(url: String): Boolean {
+        val host = try { Uri.parse(url).host?.lowercase() } catch (e: Exception) { null } ?: return false
+        if (Patterns.IP_ADDRESS.matcher(host).matches()) return true
+        for ((brand, officialDomain) in brandDomains) {
+            if (host.contains(brand) && !host.endsWith(officialDomain)) return true
+        }
+        if (host.count { it == '-' } >= 4) return true
+        return false
+    }
+
+    private fun showPhishingWarning(url: String) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.phishing_warning_title)
+            .setMessage(getString(R.string.phishing_warning_message, url))
+            .setPositiveButton(R.string.phishing_continue) { _, _ ->
+                confirmedSuspiciousUrls.add(url)
+                currentWebView?.loadUrl(url)
+            }
+            .setNegativeButton(R.string.phishing_go_back, null)
+            .setCancelable(false)
+            .show()
     }
 
     private fun shareCurrentPage() {

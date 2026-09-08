@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK and EXE
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-android:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -44,7 +44,43 @@ jobs:
           tag: latest
           name: "Последняя сборка"
           allowUpdates: true
-          removeArtifacts: true
+          removeArtifacts: false
           artifacts: "app/build/outputs/apk/debug/app-debug.apk"
-          body: "Автоматическая сборка APK из последнего коммита в main."
+          body: "Автоматическая сборка APK (Android) и EXE (Windows) из последнего коммита в main."
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows-exe:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm install
+
+      - name: Build Windows installer
+        working-directory: desktop
+        run: npm run dist
+
+      - name: Upload EXE as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: omegarouser-windows-installer
+          path: desktop/dist/*.exe
+
+      - name: Publish EXE to Release (easy download link)
+        uses: ncipollo/release-action@v1
+        with:
+          tag: latest
+          name: "Последняя сборка"
+          allowUpdates: true
+          removeArtifacts: false
+          artifacts: "desktop/dist/*.exe"
+          body: "Автоматическая сборка APK (Android) и EXE (Windows) из последнего коммита в main."
           token: ${{ secrets.GITHUB_TOKEN }}

@@ -10,3 +10,6 @@
 local.properties
 *.apk
 *.aab
+desktop/node_modules
+desktop/dist
+desktop/package-lock.json

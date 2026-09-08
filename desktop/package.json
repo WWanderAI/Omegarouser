@@ -1,0 +1,33 @@
+{
+  "name": "omegarouser-desktop",
+  "version": "1.0.0",
+  "description": "Omegarouser — браузер для Windows на Electron",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --publish=never"
+  },
+  "devDependencies": {
+    "electron": "^28.2.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.omegarouser.desktop",
+    "productName": "Omegarouser",
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "style.css",
+      "renderer.js",
+      "start_page.html"
+    ]
+  }
+}

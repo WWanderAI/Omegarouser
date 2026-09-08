@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/bg_widget_pill"
+    android:padding="10dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/bookmarks_title"
+        android:textColor="@color/brand_green_dark"
+        android:textStyle="bold"
+        android:textSize="12sp"
+        android:paddingBottom="4dp" />
+
+    <TextView
+        android:id="@+id/bookmarkRow1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="4dp"
+        android:textColor="#3c4043"
+        android:textSize="13sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/bookmarkRow2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="4dp"
+        android:textColor="#3c4043"
+        android:textSize="13sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/bookmarkRow3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="4dp"
+        android:textColor="#3c4043"
+        android:textSize="13sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/bookmarkRow4"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="4dp"
+        android:textColor="#3c4043"
+        android:textSize="13sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/bookmarksEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="4dp"
+        android:text="@string/bookmarks_empty_widget"
+        android:textColor="#80868b"
+        android:textSize="12sp"
+        android:visibility="gone" />
+
+</LinearLayout>

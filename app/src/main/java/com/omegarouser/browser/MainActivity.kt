@@ -58,6 +58,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_FOCUS_SEARCH = "focus_search"
+        const val EXTRA_NEW_TAB = "new_tab"
     }
 
 
@@ -192,6 +193,10 @@ class MainActivity : AppCompatActivity() {
         val incomingUrl = extractUrlFromIntent(intent)
         if (incomingUrl != null) {
             createNewTab(incomingUrl, isPrivate = false)
+            hideTabsOverlay()
+        }
+        if (intent.getBooleanExtra(EXTRA_NEW_TAB, false)) {
+            createNewTab(homeUrl, isPrivate = false)
             hideTabsOverlay()
         }
         if (intent.getBooleanExtra(EXTRA_FOCUS_SEARCH, false)) {
@@ -585,6 +590,7 @@ class MainActivity : AppCompatActivity() {
         val tab = currentTab ?: return
         if (tab.url.startsWith("file:///android_asset")) return
         val added = BookmarkStore.toggle(this, tab.url, tab.title)
+        OmegarouserBookmarksWidgetProvider.requestUpdate(this)
         val message = if (added) getString(R.string.bookmark_added) else getString(R.string.bookmark_removed)
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }

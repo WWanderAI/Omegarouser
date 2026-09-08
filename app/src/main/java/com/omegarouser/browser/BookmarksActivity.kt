@@ -29,6 +29,7 @@ class BookmarksActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnCloseBookmarks).setOnClickListener { finish() }
         findViewById<View>(R.id.btnClearBookmarks).setOnClickListener {
             BookmarkStore.clear(this)
+            OmegarouserBookmarksWidgetProvider.requestUpdate(this)
             Toast.makeText(this, getString(R.string.bookmarks_cleared), Toast.LENGTH_SHORT).show()
             loadBookmarks()
         }
@@ -67,6 +68,7 @@ class BookmarksActivity : AppCompatActivity() {
                 },
                 onRemove = { url ->
                     BookmarkStore.remove(this, url)
+                    OmegarouserBookmarksWidgetProvider.requestUpdate(this)
                     loadBookmarks()
                 }
             )

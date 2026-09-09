@@ -94,15 +94,33 @@ class MainActivity : AppCompatActivity() {
     private val currentTab: TabData? get() = tabs.getOrNull(currentTabIndex)
     private val currentWebView: WebView? get() = currentTab?.webView
 
-    // Простой список рекламных/трекинговых доменов для блокировки
+    // Список рекламных/трекинговых доменов для блокировки
     private val adBlockHosts = setOf(
+        // Google Ads / Analytics
         "doubleclick.net", "googlesyndication.com", "googleadservices.com",
-        "google-analytics.com", "adservice.google.com", "adsystem.com",
-        "amazon-adsystem.com", "taboola.com", "outbrain.com", "criteo.com",
-        "criteo.net", "moatads.com", "scorecardresearch.com", "adnxs.com",
-        "pubmatic.com", "rubiconproject.com", "mc.yandex.ru", "mc.yandex.com",
-        "an.yandex.ru", "yandexadexchange.net", "vk.com/rtrg", "top-fwz1.mail.ru",
-        "top.mail.ru", "popads.net", "adcolony.com"
+        "google-analytics.com", "adservice.google.com", "googletagmanager.com",
+        "googletagservices.com", "googleoptimize.com", "google-analytics.l.google.com",
+        "pagead2.googlesyndication.com", "adservice.google.ru",
+        // Общие рекламные сети
+        "adsystem.com", "amazon-adsystem.com", "taboola.com", "outbrain.com",
+        "criteo.com", "criteo.net", "moatads.com", "scorecardresearch.com",
+        "adnxs.com", "pubmatic.com", "rubiconproject.com", "popads.net",
+        "adcolony.com", "advertising.com", "adroll.com", "bidswitch.net",
+        "casalemedia.com", "contextweb.com", "openx.net", "smartadserver.com",
+        "media.net", "yieldmo.com", "sharethrough.com", "sovrn.com",
+        "adform.net", "adition.com", "quantserve.com", "chartbeat.com",
+        "newrelic.com", "hotjar.com",
+        // Яндекс/Mail.ru реклама и трекинг
+        "mc.yandex.ru", "mc.yandex.com", "an.yandex.ru", "yandexadexchange.net",
+        "top-fwz1.mail.ru", "top.mail.ru", "target.my.com",
+        "ad.mail.ru", "an.yandex.com",
+        // VK реклама и трекинг
+        "ads.vk.com", "vk-portal.net",
+        // Facebook/Meta трекинг
+        "connect.facebook.net", "an.facebook.com",
+        // Прочее
+        "mgid.com", "propellerads.com", "popcash.net", "exoclick.com",
+        "trafficjunky.net", "adsterra.com", "revcontent.com"
     )
 
     private var pendingGeoOrigin: String? = null

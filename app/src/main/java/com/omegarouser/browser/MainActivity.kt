@@ -112,6 +112,7 @@ class MainActivity : AppCompatActivity() {
         "newrelic.com", "hotjar.com",
         // Яндекс/Mail.ru реклама и трекинг
         "mc.yandex.ru", "mc.yandex.com", "an.yandex.ru", "yandexadexchange.net",
+        "adfox.ru", "ads.adfox.ru", "banners.adfox.ru",
         "top-fwz1.mail.ru", "top.mail.ru", "target.my.com",
         "ad.mail.ru", "an.yandex.com",
         // VK реклама и трекинг
@@ -419,6 +420,9 @@ class MainActivity : AppCompatActivity() {
 
                 if (url != null && !url.startsWith("file:///android_asset")) {
                     replaceGoogleBranding(view)
+                    if (SettingsStore.isAdblockEnabled(this@MainActivity)) {
+                        hideAdElements(view)
+                    }
                     if (!tab.isPrivate) {
                         HistoryStore.addEntry(this@MainActivity, url, tab.title)
                     }
@@ -869,6 +873,65 @@ class MainActivity : AppCompatActivity() {
         btnForward.isEnabled = wv?.canGoForward() == true
         btnBack.alpha = if (wv?.canGoBack() == true) 1.0f else 0.4f
         btnForward.alpha = if (wv?.canGoForward() == true) 1.0f else 0.4f
+    }
+
+    /**
+     * "Косметическая" блокировка: некоторые сайты (например, Lenta.ru) отдают рекламные
+     * креативы напрямую со своего домена — блокировка по хосту такое не ловит.
+     * Поэтому дополнительно скрываем DOM-элементы с типичной для рекламных блоков
+     * разметкой (id/class с "ad", "advert", "reklama", "banner-ad", "adfox" и т.д.),
+     * плюс следим за новыми элементами через MutationObserver.
+     * Эвристика может иногда задеть что-то лишнее — это компромисс любого блокировщика.
+     */
+    private fun hideAdElements(view: WebView?) {
+        val js = """
+            (function() {
+                var selectors = [
+                    'ins.adsbygoogle',
+                    'iframe[src*="doubleclick"]',
+                    'iframe[src*="googlesyndication"]',
+                    'iframe[id*="google_ads"]',
+                    'iframe[src*="adfox"]',
+                    '[id*="adfox"]',
+                    '[class*="adfox"]',
+                    '[id*="yandex_ad"]',
+                    '[class*="yandex-ad"]',
+                    '[class*="banner-ad"]',
+                    '[class*="banner_ad"]',
+                    '[class*="advert"]',
+                    '[class*="reklama"]',
+                    '[data-ad-slot]',
+                    '[data-testid*="advert"]',
+                    '[aria-label="Реклама"]',
+                    '[class*="ad-place"]',
+                    '[class*="ad_place"]',
+                    '[class*="ad-container"]',
+                    '[class*="ad_container"]'
+                ];
+                function hide(root) {
+                    if (!root || !root.querySelectorAll) return;
+                    selectors.forEach(function(sel) {
+                        try {
+                            root.querySelectorAll(sel).forEach(function(el) {
+                                if (el.dataset && el.dataset.omegarouserAdHidden) return;
+                                if (el.dataset) el.dataset.omegarouserAdHidden = '1';
+                                el.style.setProperty('display', 'none', 'important');
+                            });
+                        } catch (e) {}
+                    });
+                }
+                if (document.body) hide(document);
+                if (!window.__omegarouserAdObserver) {
+                    window.__omegarouserAdObserver = new MutationObserver(function() {
+                        hide(document);
+                    });
+                    if (document.body) {
+                        window.__omegarouserAdObserver.observe(document.body, { childList: true, subtree: true });
+                    }
+                }
+            })();
+        """.trimIndent()
+        view?.evaluateJavascript(js, null)
     }
 
     private fun replaceGoogleBranding(view: WebView?) {

@@ -128,27 +128,60 @@
   .news-panel {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease;
+    transition: max-height 0.35s ease;
   }
   .news-panel.open {
-    max-height: 400px;
+    max-height: 1400px;
   }
   .news-panel-inner {
     margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .news-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     background: rgba(255,255,255,0.06);
     border-radius: 12px;
+    padding: 10px;
+    text-decoration: none;
     overflow: hidden;
   }
-  .news-item {
-    display: block;
-    padding: 12px 16px;
-    color: #EAF9EE;
-    font-size: 14px;
-    text-decoration: none;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+  .news-card:active { background: rgba(255,255,255,0.12); }
+  .news-card img {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.1);
   }
-  .news-item:last-child { border-bottom: none; }
-  .news-item:active { background: rgba(255,255,255,0.1); }
+  .news-card .news-text {
+    flex: 1;
+    min-width: 0;
+  }
+  .news-card .news-title {
+    color: #EAF9EE;
+    font-size: 13.5px;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .news-card .news-source {
+    color: #7FB899;
+    font-size: 11px;
+    margin-top: 4px;
+  }
+  .news-status {
+    color: #B7D9C4;
+    font-size: 13px;
+    text-align: center;
+    padding: 16px 0;
+  }
 
   @keyframes fadeIn {
     from { opacity: 0; }
@@ -199,12 +232,8 @@
       </button>
 
       <div id="newsPanel" class="news-panel">
-        <div class="news-panel-inner">
-          <a class="news-item" href="https://news.yandex.ru">Яндекс.Новости</a>
-          <a class="news-item" href="https://news.google.com">Google Новости</a>
-          <a class="news-item" href="https://ria.ru">РИА Новости</a>
-          <a class="news-item" href="https://lenta.ru">Lenta.ru</a>
-          <a class="news-item" href="https://www.rbc.ru">РБК</a>
+        <div id="newsPanelInner" class="news-panel-inner">
+          <div class="news-status" id="newsStatus">Загрузка новостей…</div>
         </div>
       </div>
     </div>
@@ -225,11 +254,71 @@
   var expandBtn = document.getElementById('expandBtn');
   var newsPanel = document.getElementById('newsPanel');
   var expandLabel = document.getElementById('expandLabel');
+  var newsLoaded = false;
+
   expandBtn.addEventListener('click', function () {
     var isOpen = newsPanel.classList.toggle('open');
     expandBtn.classList.toggle('open', isOpen);
     expandLabel.textContent = isOpen ? 'Свернуть' : 'Развернуть';
+    if (isOpen && !newsLoaded) {
+      newsLoaded = true;
+      loadNews();
+    }
   });
+
+  function loadNews() {
+    var feedUrl = encodeURIComponent('https://lenta.ru/rss/news');
+    var apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=' + feedUrl;
+
+    fetch(apiUrl)
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.items || data.items.length === 0) {
+          showNewsStatus('Не удалось загрузить новости');
+          return;
+        }
+        renderNews(data.items.slice(0, 10), data.feed ? data.feed.title : 'Новости');
+      })
+      .catch(function () {
+        showNewsStatus('Нет соединения — новости недоступны');
+      });
+  }
+
+  function extractImage(item) {
+    if (item.thumbnail) return item.thumbnail;
+    if (item.enclosure && item.enclosure.link) return item.enclosure.link;
+    var match = /<img[^>]+src="([^">]+)"/.exec(item.description || item.content || '');
+    return match ? match[1] : null;
+  }
+
+  function renderNews(items, sourceName) {
+    var container = document.getElementById('newsPanelInner');
+    container.innerHTML = '';
+    items.forEach(function (item) {
+      var img = extractImage(item);
+      var card = document.createElement('a');
+      card.className = 'news-card';
+      card.href = item.link;
+      card.innerHTML =
+        (img ? '<img src="' + img + '" alt="" onerror="this.style.display=\'none\'">' : '') +
+        '<div class="news-text">' +
+          '<div class="news-title">' + escapeHtml(item.title) + '</div>' +
+          '<div class="news-source">' + escapeHtml(sourceName || '') + '</div>' +
+        '</div>';
+      container.appendChild(card);
+    });
+  }
+
+  function showNewsStatus(text) {
+    var container = document.getElementById('newsPanelInner');
+    container.innerHTML = '<div class="news-status">' + escapeHtml(text) + '</div>';
+  }
+
+  function escapeHtml(s) {
+    var div = document.createElement('div');
+    div.textContent = s || '';
+    return div.innerHTML;
+  }
 </script>
 </body>
 </html>

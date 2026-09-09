@@ -104,6 +104,52 @@
     background: #0B2F1B;
   }
 
+  .expand-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 16px auto 0 auto;
+    background: transparent;
+    border: none;
+    color: #B7D9C4;
+    font-size: 13px;
+    padding: 8px 14px;
+    cursor: pointer;
+    animation: fadeSlideUp 0.55s ease-out 0.24s backwards;
+  }
+  .expand-btn svg {
+    transition: transform 0.25s ease;
+  }
+  .expand-btn.open svg {
+    transform: rotate(180deg);
+  }
+
+  .news-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .news-panel.open {
+    max-height: 400px;
+  }
+  .news-panel-inner {
+    margin-top: 10px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .news-item {
+    display: block;
+    padding: 12px 16px;
+    color: #EAF9EE;
+    font-size: 14px;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .news-item:last-child { border-bottom: none; }
+  .news-item:active { background: rgba(255,255,255,0.1); }
+
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -144,6 +190,23 @@
           </button>
         </div>
       </form>
+
+      <button type="button" id="expandBtn" class="expand-btn">
+        <span id="expandLabel">Развернуть</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 9l6 6 6-6" stroke="#B7D9C4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <div id="newsPanel" class="news-panel">
+        <div class="news-panel-inner">
+          <a class="news-item" href="https://news.yandex.ru">Яндекс.Новости</a>
+          <a class="news-item" href="https://news.google.com">Google Новости</a>
+          <a class="news-item" href="https://ria.ru">РИА Новости</a>
+          <a class="news-item" href="https://lenta.ru">Lenta.ru</a>
+          <a class="news-item" href="https://www.rbc.ru">РБК</a>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -157,6 +220,15 @@
   document.getElementById('searchForm').addEventListener('submit', function (e) {
     e.preventDefault();
     doSearch(document.getElementById('q').value);
+  });
+
+  var expandBtn = document.getElementById('expandBtn');
+  var newsPanel = document.getElementById('newsPanel');
+  var expandLabel = document.getElementById('expandLabel');
+  expandBtn.addEventListener('click', function () {
+    var isOpen = newsPanel.classList.toggle('open');
+    expandBtn.classList.toggle('open', isOpen);
+    expandLabel.textContent = isOpen ? 'Свернуть' : 'Развернуть';
   });
 </script>
 </body>

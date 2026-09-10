@@ -965,17 +965,34 @@ class MainActivity : AppCompatActivity() {
                     nodes.forEach(function(el) {
                         if (el.dataset && el.dataset.omegarouserLogoDone) return;
                         if (el.dataset) el.dataset.omegarouserLogoDone = '1';
-                        var h = el.offsetHeight || 32;
-                        var span = document.createElement('span');
-                        span.textContent = 'Omegarouser';
-                        span.style.fontFamily = 'inherit';
-                        span.style.fontWeight = '700';
-                        span.style.fontSize = Math.max(16, Math.min(h, 40)) + 'px';
-                        span.style.color = '#137333';
-                        span.style.display = 'inline-block';
-                        span.style.letterSpacing = '-0.5px';
-                        el.style.display = 'none';
-                        if (el.parentNode) el.parentNode.insertBefore(span, el);
+
+                        var rect = el.getBoundingClientRect();
+                        var w = rect.width || el.offsetWidth || 90;
+                        var h = rect.height || el.offsetHeight || 32;
+
+                        var wrapper = document.createElement('span');
+                        wrapper.style.position = 'relative';
+                        wrapper.style.display = 'inline-block';
+                        wrapper.style.width = w + 'px';
+                        wrapper.style.height = h + 'px';
+                        wrapper.style.verticalAlign = 'middle';
+                        wrapper.style.overflow = 'visible';
+
+                        var label = document.createElement('span');
+                        label.textContent = 'Omegarouser';
+                        label.style.position = 'absolute';
+                        label.style.left = '0';
+                        label.style.top = '50%';
+                        label.style.transform = 'translateY(-50%)';
+                        label.style.whiteSpace = 'nowrap';
+                        label.style.fontFamily = 'inherit';
+                        label.style.fontWeight = '700';
+                        label.style.fontSize = Math.max(13, Math.min(h * 0.7, 28)) + 'px';
+                        label.style.color = '#137333';
+                        label.style.letterSpacing = '-0.4px';
+
+                        wrapper.appendChild(label);
+                        if (el.parentNode) el.parentNode.replaceChild(wrapper, el);
                     });
                 }
                 if (document.body) {

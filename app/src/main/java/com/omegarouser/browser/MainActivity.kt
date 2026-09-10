@@ -420,6 +420,7 @@ class MainActivity : AppCompatActivity() {
 
                 if (url != null && !url.startsWith("file:///android_asset")) {
                     replaceGoogleBranding(view)
+                    recolorGoogleBlue(view)
                     if (SettingsStore.isAdblockEnabled(this@MainActivity)) {
                         hideAdElements(view)
                     }
@@ -873,6 +874,71 @@ class MainActivity : AppCompatActivity() {
         btnForward.isEnabled = wv?.canGoForward() == true
         btnBack.alpha = if (wv?.canGoBack() == true) 1.0f else 0.4f
         btnForward.alpha = if (wv?.canGoForward() == true) 1.0f else 0.4f
+    }
+
+    /**
+     * Точечно перекрашивает известные оттенки "гугловского синего" (кнопки типа "Войти",
+     * ссылки результатов поиска) в зелёные тона нашего бренда. В отличие от общего
+     * hue-rotate-фильтра, который разворачивает ВСЕ цвета (и выглядел как инверсия),
+     * здесь меняются только конкретные близкие к синему Google оттенки — остальные
+     * цвета страницы (фото, логотипы других сервисов и т.д.) не трогаются.
+     */
+    private fun recolorGoogleBlue(view: WebView?) {
+        val js = """
+            (function() {
+                var targets = [[66,133,244],[26,115,232],[25,103,210],[11,87,208],[8,66,160],[26,13,171]];
+                function dist(a, b) {
+                    return Math.sqrt(Math.pow(a[0]-b[0],2) + Math.pow(a[1]-b[1],2) + Math.pow(a[2]-b[2],2));
+                }
+                function parseRgb(s) {
+                    var m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(s || '');
+                    return m ? [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])] : null;
+                }
+                function isCloseToTarget(rgb) {
+                    if (!rgb) return false;
+                    for (var i = 0; i < targets.length; i++) {
+                        if (dist(rgb, targets[i]) < 22) return true;
+                    }
+                    return false;
+                }
+                function recolor(root) {
+                    if (!root || !root.querySelectorAll) return;
+                    var elements = root.querySelectorAll('*');
+                    var limit = Math.min(elements.length, 4000);
+                    for (var i = 0; i < limit; i++) {
+                        var el = elements[i];
+                        if (el.dataset && el.dataset.omegarouserRecolored) continue;
+                        var cs = window.getComputedStyle(el);
+                        var changed = false;
+                        if (isCloseToTarget(parseRgb(cs.backgroundColor))) {
+                            el.style.setProperty('background-color', '#34A853', 'important');
+                            changed = true;
+                        }
+                        if (isCloseToTarget(parseRgb(cs.color))) {
+                            el.style.setProperty('color', '#0B8043', 'important');
+                            changed = true;
+                        }
+                        if (isCloseToTarget(parseRgb(cs.borderColor))) {
+                            el.style.setProperty('border-color', '#34A853', 'important');
+                            changed = true;
+                        }
+                        if (changed && el.dataset) el.dataset.omegarouserRecolored = '1';
+                    }
+                }
+                recolor(document);
+                if (window.__omegarouserRecolorTimer) clearTimeout(window.__omegarouserRecolorTimer);
+                if (!window.__omegarouserRecolorObserver) {
+                    window.__omegarouserRecolorObserver = new MutationObserver(function() {
+                        if (window.__omegarouserRecolorTimer) clearTimeout(window.__omegarouserRecolorTimer);
+                        window.__omegarouserRecolorTimer = setTimeout(function() { recolor(document); }, 400);
+                    });
+                    if (document.body) {
+                        window.__omegarouserRecolorObserver.observe(document.body, { childList: true, subtree: true });
+                    }
+                }
+            })();
+        """.trimIndent()
+        view?.evaluateJavascript(js, null)
     }
 
     /**

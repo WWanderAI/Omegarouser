@@ -24,6 +24,7 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.webkit.CookieManager
 import android.webkit.GeolocationPermissions
+import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -368,6 +369,8 @@ class MainActivity : AppCompatActivity() {
         CookieManager.getInstance().setAcceptCookie(true)
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
 
+        val searchConfigBridge = SearchConfigBridge(this)
+
         webView.webViewClient = object : WebViewClient() {
 
             override fun shouldInterceptRequest(
@@ -396,6 +399,15 @@ class MainActivity : AppCompatActivity() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
                 tab.url = url ?: tab.url
+
+                // Мост с API-ключом доступен только нашей собственной странице поиска —
+                // ни один внешний сайт не должен иметь к нему доступ
+                if (url != null && url.startsWith("file:///android_asset/search_results.html")) {
+                    view?.addJavascriptInterface(searchConfigBridge, "OmegaSearchBridge")
+                } else {
+                    view?.removeJavascriptInterface("OmegaSearchBridge")
+                }
+
                 if (tab === currentTab) {
                     progressBar.max = 100
                     progressBar.progress = 0
@@ -850,7 +862,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun displayUrl(url: String): String {
-        return if (url.startsWith("file:///android_asset/start_page.html")) "" else url
+        if (url.startsWith("file:///android_asset/start_page.html")) return ""
+        if (url.startsWith("file:///android_asset/search_results.html")) {
+            val query = Uri.parse(url).getQueryParameter("q")
+            return query ?: ""
+        }
+        return url
     }
 
     private fun updateSslIndicator(url: String) {
@@ -1115,5 +1132,18 @@ class MainActivity : AppCompatActivity() {
             tabs.size > 1 -> closeTab(currentTabIndex)
             else -> super.onBackPressed()
         }
+    }
+
+    /**
+     * Мост для нашей собственной страницы результатов поиска (search_results.html):
+     * отдаёт ей ключ Custom Search API, введённый пользователем в настройках, чтобы
+     * страница могла сама запросить результаты и не хранить ключ в открытом виде в URL.
+     */
+    private inner class SearchConfigBridge(private val context: android.content.Context) {
+        @JavascriptInterface
+        fun getApiKey(): String = SettingsStore.getCustomSearchApiKey(context)
+
+        @JavascriptInterface
+        fun getCseId(): String = SettingsStore.getCustomSearchEngineId(context)
     }
 }

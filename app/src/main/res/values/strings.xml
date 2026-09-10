@@ -33,6 +33,12 @@
     <string name="settings_search_engine_title">Поисковая система</string>
     <string name="settings_permissions_title">Разрешения сайтов</string>
     <string name="settings_permissions_subtitle">Камера, микрофон, геолокация, уведомления — системные настройки приложения</string>
+    <string name="settings_custom_search_title">Свой поиск (без интерфейса Google)</string>
+    <string name="settings_custom_search_subtitle">Укажи ключ Google Custom Search API — результаты будут показываться в нашем собственном дизайне с фото и видео вместо страницы Google. Получить бесплатно: programmablesearchengine.google.com и console.cloud.google.com. Если не заполнено — поиск работает как раньше.</string>
+    <string name="settings_cse_api_key_hint">API-ключ</string>
+    <string name="settings_cse_id_hint">ID поисковой системы (cx)</string>
+    <string name="settings_save">Сохранить</string>
+    <string name="settings_cse_saved">Настройки поиска сохранены</string>
 
     <string name="menu_home">Домой</string>
     <string name="menu_bookmarks">Закладки</string>

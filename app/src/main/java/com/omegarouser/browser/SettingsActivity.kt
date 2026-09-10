@@ -6,8 +6,10 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.CompoundButton
+import android.widget.EditText
 import android.widget.RadioGroup
 import android.widget.Switch
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
 class SettingsActivity : AppCompatActivity() {
@@ -39,6 +41,17 @@ class SettingsActivity : AppCompatActivity() {
                 else -> "google"
             }
             SettingsStore.setSearchEngine(this, engine)
+        }
+
+        val apiKeyInput = findViewById<EditText>(R.id.inputCseApiKey)
+        val engineIdInput = findViewById<EditText>(R.id.inputCseEngineId)
+        apiKeyInput.setText(SettingsStore.getCustomSearchApiKey(this))
+        engineIdInput.setText(SettingsStore.getCustomSearchEngineId(this))
+
+        findViewById<View>(R.id.btnSaveCseConfig).setOnClickListener {
+            SettingsStore.setCustomSearchApiKey(this, apiKeyInput.text.toString())
+            SettingsStore.setCustomSearchEngineId(this, engineIdInput.text.toString())
+            Toast.makeText(this, getString(R.string.settings_cse_saved), Toast.LENGTH_SHORT).show()
         }
 
         findViewById<View>(R.id.btnSitePermissions).setOnClickListener {

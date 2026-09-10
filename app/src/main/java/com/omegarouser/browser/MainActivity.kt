@@ -878,10 +878,13 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * Точечно перекрашивает известные оттенки "гугловского синего" (кнопки типа "Войти",
-     * ссылки результатов поиска) в зелёные тона нашего бренда. В отличие от общего
-     * hue-rotate-фильтра, который разворачивает ВСЕ цвета (и выглядел как инверсия),
-     * здесь меняются только конкретные близкие к синему Google оттенки — остальные
-     * цвета страницы (фото, логотипы других сервисов и т.д.) не трогаются.
+     * ссылки результатов поиска) в зелёные тона нашего бренда, скругляет карточки/кнопки
+     * и слегка тонирует белый фон в зелёный. В отличие от общего hue-rotate-фильтра,
+     * который разворачивает ВСЕ цвета (и выглядел как инверсия), здесь меняются только
+     * конкретные элементы — фото, логотипы других сервисов и основной текст не трогаются.
+     *
+     * Честное ограничение: это косметическая накладка поверх чужой вёрстки, а не
+     * переписывание структуры страницы — расположение блоков задаёт сам сайт.
      */
     private fun recolorGoogleBlue(view: WebView?) {
         val js = """
@@ -901,6 +904,9 @@ class MainActivity : AppCompatActivity() {
                     }
                     return false;
                 }
+                function isNearWhite(rgb) {
+                    return rgb && rgb[0] > 245 && rgb[1] > 245 && rgb[2] > 245;
+                }
                 function recolor(root) {
                     if (!root || !root.querySelectorAll) return;
                     var elements = root.querySelectorAll('*');
@@ -910,10 +916,16 @@ class MainActivity : AppCompatActivity() {
                         if (el.dataset && el.dataset.omegarouserRecolored) continue;
                         var cs = window.getComputedStyle(el);
                         var changed = false;
-                        if (isCloseToTarget(parseRgb(cs.backgroundColor))) {
+
+                        var bg = parseRgb(cs.backgroundColor);
+                        if (isCloseToTarget(bg)) {
                             el.style.setProperty('background-color', '#34A853', 'important');
                             changed = true;
+                        } else if (isNearWhite(bg) && (el.tagName === 'BODY' || el.tagName === 'HTML')) {
+                            el.style.setProperty('background-color', '#F1F9F4', 'important');
+                            changed = true;
                         }
+
                         if (isCloseToTarget(parseRgb(cs.color))) {
                             el.style.setProperty('color', '#0B8043', 'important');
                             changed = true;
@@ -922,6 +934,15 @@ class MainActivity : AppCompatActivity() {
                             el.style.setProperty('border-color', '#34A853', 'important');
                             changed = true;
                         }
+
+                        // Скругляем карточки/кнопки без скруглений
+                        var radius = parseFloat(cs.borderTopLeftRadius);
+                        var hasBg = bg && !(bg[0] > 250 && bg[1] > 250 && bg[2] > 250) && cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent';
+                        if (hasBg && radius === 0 && el.tagName !== 'BODY' && el.tagName !== 'HTML') {
+                            el.style.setProperty('border-radius', '14px', 'important');
+                            changed = true;
+                        }
+
                         if (changed && el.dataset) el.dataset.omegarouserRecolored = '1';
                     }
                 }
